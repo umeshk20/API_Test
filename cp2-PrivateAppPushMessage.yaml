@@ -1,0 +1,79 @@
+# Listing of DevOps Components for 'Register App Push' Microservice.
+# starting API gateway creation using main base template
+'1':
+    DisplayName: 'CP-Public-API-GW-creation'
+    ApiGatewayStageName: dev
+    ApiGatewayName: CarePartner-Public-Api-Gateway
+    DomainName: eyoceu.clcloud.me
+    BasePath: cum
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-main
+    StackName: Prod-CarePartnerAPIGW-Public
+# creating API GW resource
+'2':
+    DisplayName: 'CP-Public-API-GW-root-resource'
+    ResourceID: CumApiGatewayResourceConnect
+    PathPart: connect
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-root-resource
+    Merge: '1'
+# creating API GW resource
+'3':
+    DisplayName: 'Public-API-GW-resource-pde'
+    ResourceID: ApiGatewayResourcepde
+    PathPart: pde
+    ParentResourceID: CumApiGatewayResourceConnect
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'4':
+    DisplayName: 'Public-API-GW-resource-v2'
+    ResourceID: ApiGatewayResourceV2
+    PathPart: v2
+    ParentResourceID: ApiGatewayResourcepde
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'5':
+    DisplayName: 'Public-API-GW-resource-appPushMessage'
+    ResourceID: ApiGatewayResourceappPushMessage
+    PathPart: appPushMessage
+    ParentResourceID: ApiGatewayResourceV2
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW method for non-root resource
+'6':
+    DisplayName: 'Public-API-GW-Method-CumAPIappPushMessage'
+    ApiGatewayMethodID: ApiGatewayMethodappPushMessage
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIappPushMessage
+    ResourceID: ApiGatewayResourceappPushMessage
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# Adding lambda invoke permissions
+'7':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeAppPushMessage'
+    LambdaInvokeID: ApiGatewayMethodappPushMessageInvoke
+    FunctionName: CumApiPdeAppPushMessage
+    ApiGatewayMethodID: ApiGatewayMethodappPushMessage
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Deploying API GW with hardcoded dependancies
+'8':
+    DisplayName: 'CP-Public-API-GW-Deploy'
+    Deploy: 'true'
+    BaseTemplate: cp-public-apigateway-deploy
+    Merge: '1'
+# exporting API GW in cloudformation
+'9':
+    DisplayName: 'CP-Public-API-GW-Export'
+    ExportName: CarePartner-Public-APIGateway
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-output
+    Merge: '1'
