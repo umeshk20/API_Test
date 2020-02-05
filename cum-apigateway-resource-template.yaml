@@ -1,0 +1,12 @@
+#Inputs:
+#  ResourceID
+#  PathPart
+#  ParentResourceID
+
+  $ResourceID$:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "$ParentResourceID$" 
+      PathPart: "$PathPart$"
+

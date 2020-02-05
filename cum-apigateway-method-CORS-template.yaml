@@ -1,0 +1,49 @@
+#Inputs:
+#  FunctionName : outClientConfigUpdateReceptor
+#  ResourceID : ApiGatewayResourceJournalbg
+#  ApiGatewayMethodID : CumApiGatewayMethodIngestJournalbg
+#  HttpMethod : GET
+#  IntegrationHttpMethod : POST
+
+  $ApiGatewayMethodID$:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: $HttpMethod$
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: $IntegrationHttpMethod$
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue $FunctionName$-Alias
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+          ResponseTemplates:
+            application/json: ''
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,x-amz-apigw-id,x-amzn-requestid,x-amzn-trace-id'"
+            method.response.header.Access-Control-Allow-Methods: "'POST,OPTIONS'"
+            method.response.header.Access-Control-Allow-Origin: "'*'"
+        TimeoutInMillis: 29000
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        PassthroughBehavior: "WHEN_NO_MATCH" 
+      RequestParameters:
+        method.request.querystring.name: false
+      ResourceId: 
+        Ref: $ResourceID$
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseParameters:
+          method.response.header.Access-Control-Allow-Headers: false
+          method.response.header.Access-Control-Allow-Methods: false
+          method.response.header.Access-Control-Allow-Origin: false
+        ResponseModels:
+          application/json: Empty

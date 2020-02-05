@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CUM API Gateway"
+
+Parameters:
+  CumApiGatewayStageName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    #Default: "dev"
+    Default: "$ApiGatewayStageName$"
+
+  CumApiGatewayName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    # Default: "dk-IR1-Api-Proxy"
+    #Default: "Cum-Api-Proxy-dny"
+    Default: "$ApiGatewayName$"
+    
+  DomainName:
+    Type: "String"    
+    Default: "$DomainName$"
+#    Default: eyoceu.clcloud.me
+
+  BasePath:
+    Type: "String"
+#    Default: cum
+    Default: "$BasePath$"
+
+  VPCID:
+    Type: "String"
+#    Default: vpc-02a8c9eb3292ca90a
+    Default: "$VPCID$"
+
+  PrivateDnsEnabled:
+    Type: "String"
+#    Default: true
+    Default: "$PrivateDnsEnabled$"
+
+  SubnetId1:
+    Type: "String"
+#    Default: subnet-032fdf0054abe1bdf  Private subnet 1B
+    Default: "$VPCESubnetId1$"
+
+  SubnetId2:
+    Type: "String"
+#    Default: subnet-032fdf0054abe1bdf  Private subnet 1B
+    Default: "$VPCESubnetId2$"
+
+#**************  Api GateWay **************#
+
+Resources:
+  # Cumulus - VPC Endpoints - API GW
+  CumVpceAPIGW:
+    Type: AWS::EC2::VPCEndpoint
+    Properties: 
+      VpcId: !Ref VPCID 
+      ServiceName: com.amazonaws.eu-central-1.execute-api
+      VpcEndpointType: Interface    
+      SubnetIds:
+        - Ref: SubnetId1
+        - Ref: SubnetId2
+      SecurityGroupIds:
+        - Fn::ImportValue: SG-CumSGAppBroker
+      PrivateDnsEnabled: !Ref PrivateDnsEnabled 
+
+  CumApiGateway:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: !Ref CumApiGatewayName
+      Description: "API Gateway for integration apis"
+      EndpointConfiguration:
+        Types: [ PRIVATE ]
+      Policy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: "*"
+          Action: execute-api:Invoke
+          Condition:
+            StringEquals:
+              aws:SourceVpc: !Ref VPCID
+
+  CumAPIGWLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: !Join ["" , [API-Gateway-Execution-Logs_, !Ref CumApiGateway, /$ApiGatewayStageName$]]
+        RetentionInDays: 60
+      DependsOn: CumApiGateway
+
+
+      

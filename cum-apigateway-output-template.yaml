@@ -1,0 +1,21 @@
+#Inputs:
+#  ExportName : ExportName
+
+   # BasepathMapping:
+   #   Type: AWS::ApiGateway::BasePathMapping
+   #   Properties:
+   #     BasePath: !Ref BasePath 
+   #     DomainName: !Ref DomainName 
+   #     RestApiId: !Ref CumApiGateway
+   #     Stage: !Ref CumApiGatewayStageName
+   #   DependsOn:
+   #     - "CumApiGateway"
+   #     - "apiGatewayDeployment"  
+       
+Outputs:
+  CumApiGatewayOutput:
+    Description: API output attributes.
+    Value: 
+      Fn::GetAtt: ["CumApiGateway","RootResourceId"]
+    Export:
+      Name: $ExportName$

@@ -1,0 +1,34 @@
+
+
+#*****************  Api Deployment  *****************#
+
+  apiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:   
+      - "CumApiGateway" 
+      - "ApiGatewayMethodblengpperiodicInvoke"
+      - "ApiGatewayMethodclientvariantkeyInvoke"
+      - "ApiGatewayMethoddisplaymessageInvoke"
+      - "ApiGatewayMethodblengpsnapshotmetadataInvoke"
+      - "ApiGatewayMethodblengpsnapshotreposInvoke"
+      - "ApiGatewayMethoddiscoverInvoke"
+      - "ApiGatewayMethodservertimeInvoke"
+      - "ApiGatewayMethodcreatekeykeyInvoke"
+      - "ApiGatewayMethoddeletekeykeyInvoke"
+      - "ApiGatewayMethodgetkeykeyInvoke"
+      - "ApiGatewayMethoduserkeystorekeypostInvoke"
+      - "ApiGatewayMethoduserkeystorekeygetInvoke"
+      - "ApiGatewayMethoduserkeystorekeydeleteInvoke"     
+      - "ApiGatewayMethodjournalBgInvoke"   
+      - "ApiGatewayMethodjournalInsulinInvoke"   
+      - "ApiGatewayMethodjournalMealInvoke"   
+      - "ApiGatewayMethodsecuresessionsInvoke"   
+      - "ApiGatewayMethodsessionidconnectInvoke"   
+      - "ApiGatewayMethodsessionidgetInvoke"   
+      - "ApiGatewayMethodsessioniddeleteInvoke"    
+      - "ApiGatewayMethodclientupdateInvoke"   
+      - "ApiGatewayMethodblengppreferencesupdateInvoke"
+      - "ApiGatewayMethodrefreshdefaultalertsettingsInvoke"
+    Properties:
+      RestApiId: !Ref "CumApiGateway"
+      StageName: !Ref "CumApiGatewayStageName"

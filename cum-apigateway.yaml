@@ -1,0 +1,810 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CUM API Gateway"
+
+Parameters:
+  CumApiGatewayStageName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    Default: "dev"
+
+  CumApiGatewayName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    # Default: "dk-IR1-Api-Proxy"
+    Default: "Cum-Api-Proxy-dny"
+    
+  DomainName:
+    Type: "String"    
+    Default: ""
+#    Default: eyoceu.clcloud.me
+
+  BasePath:
+    Type: "String"
+    Default: cum
+  
+  ExportName:
+    Type: "String"
+    Default: CUM-APIGateway
+
+#**************  Api GateWay **************#
+
+Resources:
+  CumApiGateway:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: !Ref CumApiGatewayName
+      Description: "API Gateway for integration apis"
+
+
+#*************  Api Resources  ****************#      
+
+  CumApiGatewayResourceConnect:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      RestApiId: 
+        Ref: "CumApiGateway"      
+      ParentId: 
+        Fn::GetAtt: 
+          - "CumApiGateway"
+          - "RootResourceId"
+      PathPart: "connect"
+
+  ApiGatewayResourceV1:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "CumApiGatewayResourceConnect" 
+      PathPart: "v1"
+
+  ApiGatewayResourceBlengp:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceV1" 
+      PathPart: "blengp"  
+
+  ApiGatewayResourceJournalbg:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "journalbg"         
+
+  ApiGatewayResourceJournalInsulin:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "journalinsulin"     
+
+  ApiGatewayResourceJournalMeal:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "journalmeal"
+
+  ApiGatewayResourcePeriodic:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "periodic"    
+
+  ApiGatewayResourceBlengpPreferences:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "preferences"    
+      
+  ApiGatewayResourceBlengpPreferencesUpdate:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengpPreferences" 
+      PathPart: "update"    
+
+ 
+  ApiGatewayResourceSnapshot:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceBlengp" 
+      PathPart: "snapshot"  
+
+  ApiGatewayResourceSecure:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceSnapshot" 
+      PathPart: "secure"   
+ 
+  ApiGatewayResourceSessionId:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceSecure" 
+      PathPart: "{session_id}"
+
+  ApiGatewayResourceControl:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceSessionId" 
+      PathPart: "control"
+
+  ApiGatewayResourcePumpSerialNumber:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceControl" 
+      PathPart: "{pump_serial_number}"
+
+  ApiGatewayResourceMetadata:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourcePumpSerialNumber" 
+      PathPart: "metadata"    
+
+  ApiGatewayResourceRepos:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourcePumpSerialNumber" 
+      PathPart: "repos"  
+
+  ApiGatewayResourceReadWindow:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceRepos" 
+      PathPart: "{read_window}" 
+
+  ApiGatewayResourceClient:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceV1" 
+      PathPart: "client"    
+
+  ApiGatewayResourceConfig:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceClient" 
+      PathPart: "config"     
+
+  ApiGatewayResourceClientBlengp:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceConfig" 
+      PathPart: "blengp"  
+
+  ApiGatewayResourceNotification:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceClientBlengp" 
+      PathPart: "notification"
+
+  ApiGatewayResourceNotificationUpdate:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceNotification" 
+      PathPart: "update"   
+
+  ApiGatewayResourceOsName:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceClientBlengp" 
+      PathPart: "{os_name}"
+
+  ApiGatewayResourceConfigType:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceOsName" 
+      PathPart: "{config_type}"             
+     
+
+  ApiGatewayResourceSecureSessions:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceV1" 
+      PathPart: "secure_sessions"
+
+  ApiGatewayResourceSecureSessionId:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceSecureSessions" 
+      PathPart: "{session_id}"  
+
+  ApiGatewayResourceServer:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceV1" 
+      PathPart: "server"  
+
+  ApiGatewayResourceServerTime:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourceServer" 
+      PathPart: "time"      
+
+
+
+  ApiGatewayResourcePreferences:
+    Type: AWS::ApiGateway::Resource
+    Properties: 
+      RestApiId: 
+        Ref: "CumApiGateway"      
+      ParentId: 
+        Fn::GetAtt: 
+          - "CumApiGateway"
+          - "RootResourceId"
+      PathPart: "preferences"
+
+  ApiGatewayResourceUpdates:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref "CumApiGateway" 
+      ParentId: !Ref "ApiGatewayResourcePreferences" 
+      PathPart: "updates"      
+ 
+
+
+
+#*****************  Api Deployment  *****************#
+
+  apiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:   
+      - "CumApiGateway" 
+      - "CumLambdaApiGatewayInvoke"
+      - "CumApiGatewayMethodIngestJournalbg"
+      - "CumApiGatewayMethodIngestJournalInsulin"
+      - "CumApiGatewayMethodIngestJournalMeal"
+      - "CumApiGatewayMethodIngestPeriodic"
+      - "CumApiGatewayMethodIngestSnapshot"
+      - "CumApiGatewayMethodSnapshotSecureControlRepos"
+      - "CumApiGatewayMethodSnapshotSecureControlMetadata"
+      - "CumApiGatewayMethodClientConfig"
+      - "CumApiGatewayMethodServerTime"
+      - "CumApiGatewayMethodPreferenceBroadcast"
+      - "CumApiGatewayMethodSecureSessionCreate"
+      - "CumApiGatewayMethodSecureSessionStatus"
+      - "CumApiGatewayMethodSecureSessionDelete"     
+      - "CumApiGatewayMethodIngestBlengpPreferencesUpdate"   
+    Properties:
+      RestApiId: !Ref "CumApiGateway"
+      StageName: !Ref "CumApiGatewayStageName"
+
+
+#********************* Lambda Permission ********************#
+
+
+    
+  CumLambdaApiGatewayInvoke:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - "CumApiGateway"
+      - "CumApiGatewayMethod"
+      - "CumApiGatewayMethodIngestJournalbg"
+      - "CumApiGatewayMethodIngestJournalInsulin"
+      - "CumApiGatewayMethodIngestJournalMeal"
+      - "CumApiGatewayMethodIngestPeriodic"
+      - "CumApiGatewayMethodIngestSnapshot"
+      - "CumApiGatewayMethodSnapshotSecureControlRepos"
+      - "CumApiGatewayMethodSnapshotSecureControlMetadata"
+      - "CumApiGatewayMethodClientConfig"
+      - "CumApiGatewayMethodServerTime"
+      - "CumApiGatewayMethodPreferenceBroadcast"
+      - "CumApiGatewayMethodSecureSessionCreate"
+      - "CumApiGatewayMethodSecureSessionStatus"
+      - "CumApiGatewayMethodSecureSessionDelete"  
+      - "CumApiGatewayMethodIngestBlengpPreferencesUpdate"    
+    Properties:
+      Action: lambda:invokeFunction
+      FunctionName: !ImportValue outClientConfigUpdateReceptor
+        # Fn::GetAtt:
+        # - CumLambdaFunction
+        # - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+        - ''
+        - - 'arn:aws:execute-api:'
+          - Ref: AWS::Region
+          - ":"
+          - Ref: AWS::AccountId
+          - ":"
+          - Ref: CumApiGateway
+          - "/*"
+
+
+#******************** Api Gateway Method ******************#      
+  
+  CumApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: !GetAtt CumApiGateway.RootResourceId
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty 
+
+  CumApiGatewayMethodIngestJournalbg:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceJournalbg
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty        
+
+  CumApiGatewayMethodIngestJournalInsulin:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceJournalInsulin
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty        
+
+
+  CumApiGatewayMethodIngestJournalMeal:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceJournalMeal
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty     
+
+
+  CumApiGatewayMethodIngestPeriodic:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourcePeriodic
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty     
+
+
+  CumApiGatewayMethodIngestBlengpPreferencesUpdate:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue  outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceBlengpPreferencesUpdate
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty  
+
+  CumApiGatewayMethodIngestSnapshot:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceSessionId
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty       
+
+  CumApiGatewayMethodSnapshotSecureControlMetadata:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceMetadata
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty      
+
+
+  CumApiGatewayMethodSnapshotSecureControlRepos:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue  outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceReadWindow
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty          
+
+  CumApiGatewayMethodClientConfigNotificationUpdate:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceNotificationUpdate
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty   
+
+  CumApiGatewayMethodClientConfig:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue  outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceConfigType
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty        
+
+  CumApiGatewayMethodSecureSessionCreate:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceSecureSessions
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty    
+
+  CumApiGatewayMethodSecureSessionStatus:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceSecureSessionId
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty       
+  
+  CumApiGatewayMethodSecureSessionDelete:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: DELETE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceSecureSessionId
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty          
+
+
+  CumApiGatewayMethodServerTime:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue  outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceServerTime
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty      
+
+
+  CumApiGatewayMethodPreferenceBroadcast:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue  outClientConfigUpdateReceptor
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: 
+        Ref: ApiGatewayResourceUpdates
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty                    
+
+
+#****************  Base Path Mapping For Custom Domain ******************#
+
+  # BasepathMapping:
+  #   Type: AWS::ApiGateway::BasePathMapping
+  #   Properties:
+  #     BasePath: !Ref BasePath 
+  #     DomainName: !Ref DomainName 
+  #     RestApiId: !Ref CumApiGateway
+  #     Stage: !Ref CumApiGatewayStageName
+  #   DependsOn:
+  #     - "CumApiGateway"
+  #     - "apiGatewayDeployment"  
+
+Outputs:
+  IR1APIOutput:
+    Description: API output attributes.
+    Value: 
+      Fn::GetAtt: ["CumApiGateway","RootResourceId"]
+    Export:
+      Name: !Ref ExportName
+

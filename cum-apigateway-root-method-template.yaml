@@ -1,0 +1,34 @@
+#Inputs:
+#  FunctionName : outClientConfigUpdateReceptor
+#  ApiGatewayMethodID : CumApiGatewayMethodIngestJournalbg
+#  HttpMethod : GET
+#  IntegrationHttpMethod : POST
+
+#******************** Api Gateway Method ******************#      
+  
+  $ApiGatewayMethodID$:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: $HttpMethod$
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: $IntegrationHttpMethod$
+        Uri:
+          Fn::Join:
+          - ''
+          - - 'arn:aws:apigateway:'
+            - Ref: AWS::Region
+            - ":lambda:path/2015-03-31/functions/"
+            - !ImportValue $FunctionName$-Alias
+            - "/invocations"
+        IntegrationResponses:
+        - StatusCode: 200
+        TimeoutInMillis: 29000
+      ResourceId: !GetAtt CumApiGateway.RootResourceId
+      RestApiId:
+        Ref: CumApiGateway
+      MethodResponses:
+      - StatusCode: 200
+        ResponseModels:
+          application/json: Empty 

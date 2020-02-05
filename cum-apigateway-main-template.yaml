@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CUM API Gateway"
+
+Parameters:
+  CumApiGatewayStageName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    #Default: "dev"
+    Default: "$ApiGatewayStageName$"
+
+  CumApiGatewayName:
+    Type: "String"
+    #AllowedPattern: "^[a-z0-9]+$"
+    # Default: "dk-IR1-Api-Proxy"
+    #Default: "Cum-Api-Proxy-dny"
+    Default: "$ApiGatewayName$"
+    
+  DomainName:
+    Type: "String"    
+    Default: "$DomainName$"
+#    Default: eyoceu.clcloud.me
+
+  BasePath:
+    Type: "String"
+#    Default: cum
+    Default: "$BasePath$"
+
+#**************  Api GateWay **************#
+
+Resources:
+  CumApiGateway:
+    Type: "AWS::ApiGateway::RestApi"
+    Properties:
+      Name: !Ref CumApiGatewayName
+      Description: "API Gateway for integration apis"
+      EndpointConfiguration:
+        Types: [ REGIONAL ]
+
+  CumAPIGWLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: !Join ["" , [API-Gateway-Execution-Logs_, !Ref CumApiGateway, /$ApiGatewayStageName$]]
+        RetentionInDays: 60
+      DependsOn: CumApiGateway
+

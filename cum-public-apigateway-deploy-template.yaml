@@ -1,0 +1,33 @@
+
+
+#*****************  Api Deployment  *****************#
+
+  apiGatewayDeployment:
+    Type: "AWS::ApiGateway::Deployment"
+    DependsOn:   
+      - "CumApiGateway"
+      - "ApiGatewayMethodblengpperiodicInvoke"
+      - "ApiGatewayMethodclientvariantkeyInvoke"
+      - "ApiGatewayMethoddisplaymessageInvoke"
+      - "ApiGatewayMethoddisplaymessageInvokeCORS"
+      - "ApiGatewayMethodblengpsnapshotmetadataInvoke"
+      - "ApiGatewayMethodblengpsnapshotreposInvoke"
+      - "ApiGatewayMethoddiscoverInvoke"
+      - "ApiGatewayMethodservertimeInvoke"
+      - "ApiGatewayMethodcreatekeykeyInvoke"
+      - "ApiGatewayMethoddeletekeykeyInvoke"
+      - "ApiGatewayMethodgetkeykeyInvoke"
+      - "ApiGatewayMethoduserkeystorekeypostInvoke"
+      - "ApiGatewayMethoduserkeystorekeygetInvoke"
+      - "ApiGatewayMethoduserkeystorekeydeleteInvoke"  
+    Properties:
+      RestApiId: !Ref "CumApiGateway"
+      StageName: !Ref "CumApiGatewayStageName"
+      StageDescription:
+        MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          MetricsEnabled: true
+          ResourcePath: "/*"
+
