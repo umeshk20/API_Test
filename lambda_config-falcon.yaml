@@ -1,0 +1,432 @@
+#Deploying lambda to move logs to Elastic Search
+'1':
+    DisplayName: JanusAPILogstoElasticSearch
+    LambdaFunctionName: JanusAPILogstoElasticSearch
+    ZipName: lambda-logs-to-elasticsearch
+    CheckSumKey: lambda-logs-to-elasticsearch
+    Handler: 'LogsToElasticsearch.handler'
+    Variables:
+        ES_ENDPOINT: '!ImportValue ES-DomainEndpointURL'
+        SNSTOPIC_WARN: '!ImportValue Warn-Topic'
+        SNSTOPIC_ERROR: '!ImportValue Error-Topic'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-zip
+    StackName: JanusAPILogstoElasticSearch
+    Runtime: nodejs10.x
+#exporting lambda resource in cloudformation
+'2':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '1'
+
+
+#deploying lambda JanusAPIUserKeyStore
+'3':
+    DisplayName: JanusAPIUserKeyStore
+    LambdaFunctionName: JanusAPIUserKeyStore
+    # Version number will be added by the CF template
+    ZipName: lambda-user-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraUserKeystore::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_userkey: appinfra-userkeystore
+        flow_name: 'Cumulus.CpExp.UserKeyStore.Lambda'
+        http_connect_timeout: '10000'
+        http_connection_request_timeout: '10000'
+        http_socket_timeout: '10000'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: JanusAPIUserKeyStore
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'4':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '3'
+#exporting lambda resource in cloudformation
+'5':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '3'
+
+
+#deploying lambda JanusAPIAppKeyStoreCreate
+'6':
+    DisplayName: JanusAPIAppKeyStoreCreate
+    LambdaFunctionName: JanusAPIAppKeyStoreCreate
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreCreate::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name: 'Janus.appInfra.AppKeyStoreCreate.Lambda'	
+        http_connect_timeout: '5000'
+        http_connection_request_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_data_cache_capacity: '100'
+	kms_key_data_arn : 'arn:aws:kms:eu-central-1:424069389173:key/150df5f7-656a-421c-8989-d657a29b16cf'
+        kms_max_entry_age: '600000' 
+        kms_max_entry_messages: '100'
+	security_type : 'Bearer Token'
+        sts_check_required: '"Yes"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url : '!ImportValue STS-VPCE-URL'
+    StackName: JanusAPIAppKeyStoreCreate
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'7':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '6'
+#exporting lambda resource in cloudformation
+'8':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '6'
+
+
+#deploying lambda JanusAPIAppKeyStoreGet
+'9':
+    DisplayName: JanusAPIAppKeyStoreGet
+    LambdaFunctionName: JanusAPIAppKeyStoreGet
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreGet::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name : 'Janus.appInfra.AppKeyStoreGet.Lambda'
+	http_connect_timeout : '5000'
+	http_connection_request_timeout : '5000'
+	http_socket_timeout : '5000'
+	kms_key_data_arn : 'arn:aws:kms:eu-central-1:424069389173:key/150df5f7-656a-421c-8989-d657a29b16cf'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+	security_type : 'Bearer Token'
+        sts_check_required: '"Yes"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url : '!ImportValue STS-VPCE-URL'	
+    StackName: JanusAPIAppKeyStoreGet
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'10':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '9'
+#exporting lambda resource in cloudformation
+'11':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '9'
+
+
+#deploying lambda JanusAPIAppKeyStoreDelete
+'12':
+    DisplayName: JanusAPIAppKeyStoreDelete
+    LambdaFunctionName: JanusAPIAppKeyStoreDelete
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreDelete::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name : 'Janus.appInfra.AppKeyStoreDelete.Lambda'
+	http_connect_timeout : '5000'
+	http_connection_request_timeout : '5000'
+	http_socket_timeout : '5000'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+	security_type : 'Bearer Token'
+	sts_check_required : '"Yes"'
+	sts_role : '!ImportValue Role-STSAssumeRoleArn'
+	sts_url : '!ImportValue STS-VPCE-URL'
+    StackName: JanusAPIAppKeyStoreDelete
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'13':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '12'
+#exporting lambda resource in cloudformation
+'14':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '12'
+
+
+#deploying lambda JanusAPIDiscovery
+'15':
+    DisplayName: JanusAPIDiscovery
+    LambdaFunctionName: JanusAPIDiscovery
+    # Version number will be added by the CF template
+    ZipName: lambda-discover
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.Discover::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        cdx_get_config_url: '!ImportValue cdxUrlDiscover'
+        cdx_url_discover_method: GET
+        config_bucket: '!ImportValue ocl-configurations-prod'
+        config_file : 'JANUS'
+        config_key_prefix : 'discover.janus'
+        discovery_folder_path: /janus/Discover/active
+        flow_name: 'Janus.Exp.Discover.Lambda'
+        http_connect_timeout: '10000'
+        http_connection_request_timeout: '10000'
+        http_socket_timeout: '10000'
+    StackName: JanusAPIDiscovery
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'16':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '15'
+#exporting lambda resource in cloudformation
+'17':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '15'
+
+
+#deploying lambda JanusAPICpGetClientConfig
+'18':
+    DisplayName: JanusAPIGetClientConfig
+    LambdaFunctionName: JanusAPIGetClientConfig
+    # Version number will be added by the CF template
+    ZipName: lambda-client-config
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.GetClientConfig::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        #Need to update As per Environment
+	cdx_url_discover_method : GET
+        cdx_get_config_url: '!ImportValue cdxUrlGetClientConfig'
+        client_config_folder_path:  /janus/ClientConfig/active
+        #Need to update As per Environment
+        config_bucket: '!ImportValue ocl-configurations-prod'
+        config_file: 'JANUS'
+        config_key_prefix: 'cgm'
+        flow_name: 'Janus.GcExp.GetClientConfig.Lambda'
+        http_connect_timeout: '10000'
+        http_connection_request_timeout: '10000'
+        http_socket_timeout: '10000'
+    StackName: JanusAPIGetClientConfig
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'19':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '18'
+#exporting lambda resource in cloudformation
+'20':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '18'
+
+
+#deploying lambda CumAPIGetServerTime
+'21':
+    DisplayName: JanusAPIGetServerTime
+    LambdaFunctionName: JanusAPIGetServerTime
+    # Version number will be added by the CF template
+    ZipName: lambda-get-server-time
+    CheckSumKey: lambda-get-server-time
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.GetServerTime::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        security_type: 'Bearer Token'
+        sts_check_required: '"Yes"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url : '!ImportValue STS-VPCE-URL'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        http_connection_request_timeout: '10000'
+        http_connect_timeout: '10000'
+        http_socket_timeout: '10000'
+    StackName: JanusAPIGetServerTime
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'22':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: JanusAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '21'
+#exporting lambda resource in cloudformation
+'23':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '21'
+#deploying lambda CumAPINotificationProcessing
+'24':
+    DisplayName: CumAPINotificationProcessing
+    LambdaFunctionName: CumAPINotificationProcessing
+    # Version number will be added by the CF template
+    ZipName: lambda-notification-processing
+    CheckSumKey: lambda-notification-processing
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.notification.engine.process.NotificationProcessing::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-concurrency
+    ReservedConcurrentExecutions: '1'
+    Variables:
+        ConnectEJB_sms_recipient_phonenumber_mock: '!ImportValue ConnectEJBSmsRecipientPhonenumberMock'
+        ConnectSMS_vendor_clickatell: 'ClickatellSMS'
+        ConnectSMS_vendor_clickatell_americasAccountAPID: '!ImportValue ConnectSMSVendorClickatellAmericasAccountAPID'
+        ConnectSMS_vendor_clickatell_americasAccountCountryCodes : '!ImportValue ConnectSMSVendorClickatellAmericasAccountCountryCodes'
+        ConnectSMS_vendor_clickatell_americasAccountPassword : '!ImportValue ConnectSMSVendorClickatellAmericasAccountPassword'
+        ConnectSMS_vendor_clickatell_americasAccountSenderIDs: '!ImportValue ConnectSMSVendorClickatellAmericasAccountSenderIDs'
+        ConnectSMS_vendor_clickatell_americasAccountUsername: '!ImportValue ConnectSMSVendorClickatellAmericasAccountUsername'
+        ConnectSMS_vendor_clickatell_ccSupported: '!ImportValue ConnectSMSVendorClickatellCcSupported'
+        ConnectSMS_vendor_clickatell_coverage_url: '!ImportValue ConnectSMSVendorClickatellCoverageUrl'
+        ConnectSMS_vendor_clickatell_internationalAccountAPID: '!ImportValue ConnectSMSVendorClickatellInternationalAccountAPID'
+        ConnectSMS_vendor_clickatell_internationalAccountPassword: '!ImportValue ConnectSMSVendorClickatellInternationalAccountPassword'
+        ConnectSMS_vendor_clickatell_internationalAccountSenderID: '!ImportValue ConnectSMSVendorClickatellInternationalAccountSenderID'
+        ConnectSMS_vendor_clickatell_internationalAccountUsername: '!ImportValue ConnectSMSVendorClickatellInternationalAccountUsername'
+        ConnectSMS_vendor_clickatell_internationalIncludeEscalate: '!ImportValue ConnectSMSVendorClickatellInternationalIncludeEscalate'
+        ConnectSMS_vendor_clickatell_internationalIncludeMO: '!ImportValue ConnectSMSVendorClickatellInternationalIncludeMO'
+        ConnectSMS_vendor_clickatell_send_delayBetweenAttempts: '!ImportValue ConnectSMSVendorClickatellSendDelayBetweenAttempts'
+        ConnectSMS_vendor_clickatell_send_maxAttempts: '!ImportValue ConnectSMSVendorClickatellSendMaxAttempts'
+        ConnectSMS_vendor_clickatell_send_timeout: '!ImportValue ConnectSMSVendorClickatellSendTimeout'
+        ConnectSMS_vendor_clickatell_send_url: '!ImportValue ConnectSMSVendorClickatellSendUrl'
+        ConnectSMS_vendor_fallback: '!ImportValue ConnectSMSVendorFallback'
+        ConnectSMS_vendor_twilio: '!ImportValue ConnectSMSVendorTwilio'
+        ConnectSMS_vendor_twilio_ccSupported: '!ImportValue ConnectSMSVendorTwilioCcSupported'
+        dynamodb_table_active_notification: 'notification_details'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey' 
+        kms_key_sse_arn: '!ImportValue KMS-CumKmsKey'
+        notification_date_format: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+        notification_dlq_name: 'DLQ-Notification-Subsystem'
+        notification_sms_table_name: 'notification_sms'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        ConnectSMS_vendor_twilio_accountSID: '!ImportValue ConnectSMSVendorTwilioAccountSID'
+        ConnectSMS_vendor_twilio_authToken: '!ImportValue ConnectSMSVendorTwilioAuthToken'
+        ConnectSMS_vendor_twilio_serviceID: '!ImportValue ConnectSMSVendorTwilioServiceID'
+        ConnectSMS_vendor_twilio_countries_twoway: '!ImportValue ConnectSMSVendorTwilioCountriesTwoway'
+        ConnectSMS_vendor_twilio_proxy_useproxy: '!ImportValue ConnectSMSVendorTwilioProxyUseproxy'
+        ConnectSMS_vendor_twilio_proxy_uri: '!ImportValue ConnectSMSVendorTwilioProxyUri'
+        ConnectSMS_vendor_twilio_custom_request_timeout_connect: '!ImportValue ConnectSMSVendorTwilioCustomRequestTimeoutConnect'
+        ConnectSMS_vendor_twilio_custom_request_timeout_socket: '!ImportValue ConnectSMSVendorTwilioCustomRequestTimeoutSocket'
+        ConnectSMS_vendor_twilio_custom_pool_timeout_lease: '!ImportValue ConnectSMSVendorTwilioCustomPoolTimeoutLease'
+        ConnectSMS_vendor_twilio_custom_pool_max_per_route: '!ImportValue ConnectSMSVendorTwilioCustomPoolMaxPerRoute'
+        ConnectSMS_vendor_twilio_custom_pool_max_total: '!ImportValue ConnectSMSVendorTwilioCustomPoolMaxTotal'
+        ConnectSMS_vendor_twilio_custom_pool_diagnostics_extended: '!ImportValue ConnectSMSVendorTwilioCustomPoolDiagnosticsExtended'
+	applicationId : carepartner
+	carepartner_vpce_url : https://vpce-09843ac7427f31317-wsv6dau6-eu-central-1a.execute-api.eu-central-1.vpce.amazonaws.com/dev/pde/v2/appPushMessage
+	carepartner_vpce_url_header : 2nfv4cw650
+    StackName: CumAPINotificationProcessing
+    Runtime: java8
+#need to configure DLQ exactly after lambda config
+'25':
+    DisplayName: DLQ-Notification-Subsystem
+    QueueName: DLQ-Notification-Subsystem
+    Deploy: 'true'
+    BaseTemplate: lambda-dlq-config
+    Merge: '24'
+#adding SNS trigger to lambda for topic ProcessNotificationTopic
+'26':
+    DisplayName: lambda-sns-trigger
+    TopicName: ProcessNotificationTopic
+    SSMSNSArnKeyName: notification_sns_topic_arn
+    Deploy: 'true'
+    BaseTemplate: lambda-sns-trigger
+    Merge: '24'
+#adding loggroup subscription in cloudformation
+'27':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '24'
+#exporting lambda resource in cloudformation
+'28':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-sns-output
+    SNSARNExportName: 'SNS-ARN'
+    Merge: '24'

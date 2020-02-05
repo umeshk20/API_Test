@@ -1,0 +1,1384 @@
+#Creating DLQ DLQ-client-config
+'1':
+    DisplayName: DLQ-client-config
+    QueueName: DLQ-client-config
+    DelaySeconds: '0'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '1036800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    BaseTemplate: dlq
+    Deploy: 'true'
+    StackName: DLQ-client-config
+
+
+#Creating DLQ DLQ-preference-update
+'2':
+    DisplayName: DLQ-preference-update
+    QueueName: DLQ-preference-update
+    DelaySeconds: '0'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '1036800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    BaseTemplate: dlq
+    Deploy: 'true'
+    StackName: DLQ-preference-update
+
+
+#Creating DLQ DLQ-Notification-Subsystem
+'3':
+    DisplayName: DLQ-Notification-Subsystem
+    QueueName: DLQ-Notification-Subsystem
+    DelaySeconds: '0'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '1036800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    BaseTemplate: dlq
+    Deploy: 'true'
+    StackName: DLQ-Notification-Subsystem
+
+
+#Creating SQS NotificationDelayQueue-0-Minutes
+'4':
+    DisplayName: 'SQS-NotificationDelayQueue-0-Minutes'
+    QueueName: NotificationDelayQueue-0-Minutes
+    #QueueName: 'NotificationDelayQueue-0-Minutes.fifo'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    DelaySeconds: '0'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-Notification-Subsystem
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'true'
+    Deploy: 'true'
+    StackName: NotificationDelayQueue-0-Minutes
+
+
+#Creating SQS NotificationDelayQueue-5-Minutes
+'5':
+    DisplayName: SQS-NotificationDelayQueue-5-Minutes
+    QueueName: NotificationDelayQueue-5-Minutes
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    DelaySeconds: '300'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-Notification-Subsystem
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'false'
+    Deploy: 'true'
+    StackName: NotificationDelayQueue-5-Minutes
+
+
+#Creating SQS NotificationDelayQueue-10-Minutes
+'6':
+    DisplayName: SQS-NotificationDelayQueue-10-Minutes
+    QueueName: NotificationDelayQueue-10-Minutes
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    DelaySeconds: '600'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-Notification-Subsystem
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'false'
+    Deploy: 'true'
+    StackName: NotificationDelayQueue-10-Minutes
+
+
+#Creating SQS NotificationDelayQueue-15-Minutes
+'7':
+    DisplayName: SQS-NotificationDelayQueue-15-Minutes
+    QueueName: NotificationDelayQueue-15-Minutes
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    DelaySeconds: '900'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-Notification-Subsystem
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'false'
+    Deploy: 'true'
+    StackName: NotificationDelayQueue-15-Minutes
+
+
+#Creating SQS client-config-queue
+'8':
+    DisplayName: SQS-client-config-queue
+    QueueName: client-config-queue
+    DelaySeconds: '0'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-client-config
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'false'
+    Deploy: 'true'
+    StackName: client-config-queue
+
+
+#Creating SQS preference-update-queue
+'9':
+    DisplayName: SQS-preference-update-queue
+    QueueName: preference-update-queue
+    DelaySeconds: '0'
+    VisibilityTimeout: '30'
+    MessageRetentionPeriod: '604800'
+    KmsDataKeyReusePeriodSeconds: '3600'
+    BaseTemplate: sqs
+    DLQ-Name: DLQ-preference-update
+    maxReceiveCount: '1'
+    # IsFifoQueue: 'false'
+    Deploy: 'true'
+    StackName: preference-update-queue
+
+
+#Deploying lambda to move logs to Elastic Search
+'10':
+    DisplayName: CumAPILogstoElasticSearch
+    LambdaFunctionName: CumAPILogstoElasticSearch
+    ZipName: lambda-logs-to-elasticsearch
+    CheckSumKey: lambda-logs-to-elasticsearch
+    Handler: 'LogsToElasticsearch.handler'
+    Variables:
+        ES_ENDPOINT: '!ImportValue ES-DomainEndpointURL'
+        SNSTOPIC_WARN: '!ImportValue Warn-Topic'
+        SNSTOPIC_ERROR: '!ImportValue Error-Topic'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-zip
+    StackName: CumAPILogstoElasticSearch
+    Runtime: nodejs10.x
+#exporting lambda resource in cloudformation
+'11':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '10'
+
+
+#Deploying lambda CumAPIDelayNotificationForwarder
+'12':
+    DisplayName: CumAPIDelayNotificationForwarder
+    LambdaFunctionName: CumAPIDelayNotificationForwarder
+    # Version number will be added by the CF template
+    ZipName: lambda-delay-notification-forwarder
+    CheckSumKey: lambda-delay-notification-forwarder
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.notification.engine.delay.DelayNotificationForwarder::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-concurrency
+    ReservedConcurrentExecutions: '1'
+    Variables:
+        amazon_region: eu-central-1
+        notification_date_format: 'yyyy-MM-dd''T''HH:mm:ss.SSSXXX'
+        notification_dlq_name: DLQ-Notification-Subsystem
+        notification_queue_names: 'NotificationDelayQueue-0-Minutes,NotificationDelayQueue-5-Minutes,NotificationDelayQueue-10-Minutes,NotificationDelayQueue-15-Minutes'
+    StackName: CumAPIDelayNotificationForwarder
+    Runtime: java8
+#need to configure DLQ exactly after lambda config
+'13':
+    DisplayName: DLQ-Notification-Subsystem
+    QueueName: DLQ-Notification-Subsystem
+    Deploy: 'true'
+    BaseTemplate: lambda-dlq-config
+    Merge: '12'
+#adding SQS trigger to lambda for NotificationDelayQueue-10-Minutes
+'14':
+    DisplayName: SQSTriggerLambda10M
+    ResourceID: SQSTriggerLambda10M
+    QueueName: NotificationDelayQueue-10-Minutes
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '12'
+#adding SQS trigger to lambda for NotificationDelayQueue-15-Minutes
+'15':
+    DisplayName: SQSTriggerLambda15M
+    ResourceID: SQSTriggerLambda15M
+    QueueName: NotificationDelayQueue-15-Minutes
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '12'
+#adding SQS trigger to lambda for NotificationDelayQueue-5-Minutes
+'16':
+    DisplayName: SQSTriggerLambda5M
+    ResourceID: SQSTriggerLambda5M
+    QueueName: NotificationDelayQueue-5-Minutes
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '12'
+#adding loggroup subscription in cloudformation
+'17':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '12'
+#exporting lambda resource in cloudformation
+'18':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '12'
+
+
+#deploying lambda CumAPINotificationProcessing
+'19':
+    DisplayName: CumAPINotificationProcessing
+    LambdaFunctionName: CumAPINotificationProcessing
+    # Version number will be added by the CF template
+    ZipName: lambda-notification-processing
+    CheckSumKey: lambda-notification-processing
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.notification.engine.process.NotificationProcessing::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-concurrency
+    ReservedConcurrentExecutions: '1'
+    Variables:
+        ConnectEJB_sms_recipient_phonenumber_mock: '!ImportValue ConnectEJBSmsRecipientPhonenumberMock'
+        ConnectSMS_vendor_clickatell: 'ClickatellSMS'
+        ConnectSMS_vendor_clickatell_americasAccountAPID: '!ImportValue ConnectSMSVendorClickatellAmericasAccountAPID'
+        ConnectSMS_vendor_clickatell_americasAccountCountryCodes : '!ImportValue ConnectSMSVendorClickatellAmericasAccountCountryCodes'
+        ConnectSMS_vendor_clickatell_americasAccountPassword : '!ImportValue ConnectSMSVendorClickatellAmericasAccountPassword'
+        ConnectSMS_vendor_clickatell_americasAccountSenderIDs: '!ImportValue ConnectSMSVendorClickatellAmericasAccountSenderIDs'
+        ConnectSMS_vendor_clickatell_americasAccountUsername: '!ImportValue ConnectSMSVendorClickatellAmericasAccountUsername'
+        ConnectSMS_vendor_clickatell_ccSupported: '!ImportValue ConnectSMSVendorClickatellCcSupported'
+        ConnectSMS_vendor_clickatell_coverage_url: '!ImportValue ConnectSMSVendorClickatellCoverageUrl'
+        ConnectSMS_vendor_clickatell_internationalAccountAPID: '!ImportValue ConnectSMSVendorClickatellInternationalAccountAPID'
+        ConnectSMS_vendor_clickatell_internationalAccountPassword: '!ImportValue ConnectSMSVendorClickatellInternationalAccountPassword'
+        ConnectSMS_vendor_clickatell_internationalAccountSenderID: '!ImportValue ConnectSMSVendorClickatellInternationalAccountSenderID'
+        ConnectSMS_vendor_clickatell_internationalAccountUsername: '!ImportValue ConnectSMSVendorClickatellInternationalAccountUsername'
+        ConnectSMS_vendor_clickatell_internationalIncludeEscalate: '!ImportValue ConnectSMSVendorClickatellInternationalIncludeEscalate'
+        ConnectSMS_vendor_clickatell_internationalIncludeMO: '!ImportValue ConnectSMSVendorClickatellInternationalIncludeMO'
+        ConnectSMS_vendor_clickatell_send_delayBetweenAttempts: '!ImportValue ConnectSMSVendorClickatellSendDelayBetweenAttempts'
+        ConnectSMS_vendor_clickatell_send_maxAttempts: '!ImportValue ConnectSMSVendorClickatellSendMaxAttempts'
+        ConnectSMS_vendor_clickatell_send_timeout: '!ImportValue ConnectSMSVendorClickatellSendTimeout'
+        ConnectSMS_vendor_clickatell_send_url: '!ImportValue ConnectSMSVendorClickatellSendUrl'
+        ConnectSMS_vendor_fallback: '!ImportValue ConnectSMSVendorFallback'
+        ConnectSMS_vendor_twilio: '!ImportValue ConnectSMSVendorTwilio'
+        ConnectSMS_vendor_twilio_ccSupported: '!ImportValue ConnectSMSVendorTwilioCcSupported'
+        dynamodb_table_active_notification: 'notification_details'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey' 
+        kms_key_sse_arn: '!ImportValue KMS-CumKmsKey'
+        notification_date_format: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+        notification_dlq_name: 'DLQ-Notification-Subsystem'
+        notification_sms_table_name: 'notification_sms'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        ConnectSMS_vendor_twilio_accountSID: '!ImportValue ConnectSMSVendorTwilioAccountSID'
+        ConnectSMS_vendor_twilio_authToken: '!ImportValue ConnectSMSVendorTwilioAuthToken'
+        ConnectSMS_vendor_twilio_serviceID: '!ImportValue ConnectSMSVendorTwilioServiceID'
+        ConnectSMS_vendor_twilio_countries_twoway: '!ImportValue ConnectSMSVendorTwilioCountriesTwoway'
+        ConnectSMS_vendor_twilio_proxy_useproxy: '!ImportValue ConnectSMSVendorTwilioProxyUseproxy'
+        ConnectSMS_vendor_twilio_proxy_uri: '!ImportValue ConnectSMSVendorTwilioProxyUri'
+        ConnectSMS_vendor_twilio_custom_request_timeout_connect: '!ImportValue ConnectSMSVendorTwilioCustomRequestTimeoutConnect'
+        ConnectSMS_vendor_twilio_custom_request_timeout_socket: '!ImportValue ConnectSMSVendorTwilioCustomRequestTimeoutSocket'
+        ConnectSMS_vendor_twilio_custom_pool_timeout_lease: '!ImportValue ConnectSMSVendorTwilioCustomPoolTimeoutLease'
+        ConnectSMS_vendor_twilio_custom_pool_max_per_route: '!ImportValue ConnectSMSVendorTwilioCustomPoolMaxPerRoute'
+        ConnectSMS_vendor_twilio_custom_pool_max_total: '!ImportValue ConnectSMSVendorTwilioCustomPoolMaxTotal'
+        ConnectSMS_vendor_twilio_custom_pool_diagnostics_extended: '!ImportValue ConnectSMSVendorTwilioCustomPoolDiagnosticsExtended'
+	applicationId : carepartner
+	carepartner_vpce_url : https://vpce-09843ac7427f31317-wsv6dau6-eu-central-1a.execute-api.eu-central-1.vpce.amazonaws.com/dev/pde/v2/appPushMessage
+	carepartner_vpce_url_header : 2nfv4cw650
+    StackName: CumAPINotificationProcessing
+    Runtime: java8
+#need to configure DLQ exactly after lambda config
+'20':
+    DisplayName: DLQ-Notification-Subsystem
+    QueueName: DLQ-Notification-Subsystem
+    Deploy: 'true'
+    BaseTemplate: lambda-dlq-config
+    Merge: '19'
+#adding SNS trigger to lambda for topic ProcessNotificationTopic
+'21':
+    DisplayName: lambda-sns-trigger
+    TopicName: ProcessNotificationTopic
+    SSMSNSArnKeyName: notification_sns_topic_arn
+    Deploy: 'true'
+    BaseTemplate: lambda-sns-trigger
+    Merge: '19'
+#adding loggroup subscription in cloudformation
+'22':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '19'
+#exporting lambda resource in cloudformation
+'23':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-sns-output
+    SNSARNExportName: 'SNS-ARN'
+    Merge: '19'
+
+
+#deploying lambda CumAPIPublishSMSObject
+'24':
+    DisplayName: CumAPIPublishSMSObject
+    LambdaFunctionName: CumAPIPublishSMSObject
+    # Version number will be added by the CF template
+    ZipName: lambda-process-sms-object
+    CheckSumKey: lambda-process-sms-object
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.notification.engine.sms.PublishSMSObject::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base-concurrency
+    ReservedConcurrentExecutions: '1'
+    Variables:
+        amazon_region: eu-central-1
+        notification_dlq_name: DLQ-Notification-Subsystem
+        notification_sms_table_name: notification_sms
+        notification_sns_topic_arn: '!ImportValue SNS-ARN'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+    StackName: CumAPIPublishSMSObject
+    Runtime: java8
+#need to configure DLQ exactly after lambda config
+'25':
+    DisplayName: DLQ-Notification-Subsystem
+    QueueName: DLQ-Notification-Subsystem
+    Deploy: 'true'
+    BaseTemplate: Flambda-dlq-config
+    Merge: '24'
+#adding SQS trigger to lambda for NotificationDelayQueue-0-Minutes
+'26':
+    DisplayName: SQSTriggerLambda0M
+    ResourceID: SQSTriggerLambda0M
+    QueueName: NotificationDelayQueue-0-Minutes
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '24'
+#adding loggroup subscription in cloudformation
+'27':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '24'
+#exporting lambda resource in cloudformation
+'28':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '24'
+
+
+#deploying lambda CumAPIPreferenceChangeReceptor
+'29':
+    DisplayName: CumAPIPreferenceChangeReceptor
+    LambdaFunctionName: CumAPIPreferenceChangeReceptor
+    # Version number will be added by the CF template
+    ZipName: lambda-notification-preference-change-receptor
+    CheckSumKey: lambda-notification-preference-change-receptor
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.PreferenceChangeReceptor::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        sqs_preference_update_dlq: "DLQ-preference-update"
+        sqs_preference_update_queue: preference-update-queue
+    StackName: CumAPIPreferenceChangeReceptor
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'30':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '29'
+#exporting lambda resource in cloudformation
+'31':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '29'
+
+
+#deploying lambda CumAPIPreferenceChangeProcessor
+'32':
+    DisplayName: CumAPIPreferenceChangeProcessor
+    LambdaFunctionName: CumAPIPreferenceChangeProcessor
+    # Version number will be added by the CF template
+    ZipName: lambda-notification-preference-change-processor
+    CheckSumKey: lambda-notification-preference-change-processor
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.PreferenceChangeProcessor::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        cdx_url_patient_preferences: '!ImportValue cdxUrlPatientPreferences'
+        bolt_ebr_counter: '3'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        sqs_preference_update_dlq: "DLQ-preference-update"
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey' 
+        config_redis_endpoint: '!ImportValue REDIS-Endpoint'
+        config_redis_is_tls_enabled: '!ImportValue Redis-IsTLSEnabled'
+        bcrypt_logrounds: '!ImportValue bcryptLogrounds'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        http_skip_ssl_verification: 'true'
+    StackName: CumAPIPreferenceChangeProcessor
+    Runtime: java8
+#need to configure DLQ exactly after lambda config
+'33':
+    DisplayName: DLQ-preference-update
+    QueueName: DLQ-preference-update
+    Deploy: 'true'
+    BaseTemplate: lambda-dlq-config
+    Merge: '32'
+#adding SQS trigger to lambda for NotificationDelayQueue-0-Minutes
+'34':
+    DisplayName: SQSTriggerLambdaPreferenceUpdate
+    ResourceID: SQSTriggerLambdaPreferenceUpdate
+    QueueName: preference-update-queue
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '32'
+#adding loggroup subscription in cloudformation
+'35':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '32'
+#exporting lambda resource in cloudformation
+'36':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '32'
+
+
+#deploying lambda CumAPIIngestPeriodic
+'37':
+    DisplayName: CumAPIIngestPeriodic
+    LambdaFunctionName: CumAPIIngestPeriodic
+    # Version number will be added by the CF template
+    ZipName: lambda-periodic-processor
+    CheckSumKey: lambda-periodic-processor
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.BleNgpPeriodicProcessor::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_check_required: '"Yes"'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        kafka_broker_list: '!ImportValue KafkaBrokerString'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        amazon_region: eu-central-1
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        kafka_topic_raw_periodic: BLE-EU-SYS-TELEMETRY-PERIODIC-NA-NA
+        security_type: Bearer Token
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        kafka_get_result_timeout: '1000'
+    StackName: CumAPIIngestPeriodic
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'38':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '37'
+#exporting lambda resource in cloudformation
+'39':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '37'
+
+
+#deploying lambda CumAPIGetClientConfig
+'40':
+    DisplayName: CumAPIGetClientConfig
+    LambdaFunctionName: CumAPIGetClientConfig
+    # Version number will be added by the CF template
+    ZipName: lambda-client-config
+    CheckSumKey: lambda-client-config
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.GetClientConfig::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        #Need to update As per Environment
+        cdx_get_config_url: '!ImportValue cdxUrlGetClientConfig'
+        #Need to update As per Environment
+        config_bucket: '!ImportValue ocl-configurations-dev'
+        client_config_folder_path: /ble/ClientConfig/active
+        flow_name: 'Cumulus.BleExp.GetClientConfig.Lambda'
+        http_skip_ssl_verification: 'true'
+        config_file: 'BLENGP'
+        config_key_prefix: 'BLEapp'
+    StackName: CumAPIGetClientConfig
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'41':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '40'
+#exporting lambda resource in cloudformation
+'42':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '40'
+
+
+#deploying lambda CumAPIDisplayMessage
+'43':
+    DisplayName: CumAPIDisplayMessage
+    LambdaFunctionName: CumAPIDisplayMessage
+    # Version number will be added by the CF template
+    ZipName: lambda-display-message
+    CheckSumKey: lambda-display-message
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.display.message.DisplayMessage::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        dynamodb_table_display_message: telemetry_display_message
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_check_required: '"yes"'
+        dax_use: '"yes"'
+        bolt_ebr_counter: '3'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey' 
+        config_redis_endpoint: '!ImportValue REDIS-Endpoint'
+        config_redis_is_tls_enabled: '!ImportValue Redis-IsTLSEnabled'
+        security_type: Bearer Token
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        flow_name: 'Cumulus.BleExp.DisplayMessage'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIDisplayMessage
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'44':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '43'
+#exporting lambda resource in cloudformation
+'45':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '43'
+
+
+#deploying lambda CumAPIIngestSnapshot
+'46':
+    DisplayName: CumAPIIngestSnapshot
+    LambdaFunctionName: CumAPIIngestSnapshot
+    # Version number will be added by the CF template
+    ZipName: lambda-snapshot-processor
+    CheckSumKey: lambda-snapshot-processor
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.BleNgpSnapshotProcessor::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'false'
+    BaseTemplate: lambda-base
+    Variables:
+        aws_s3_snapshot: cl-snapshot
+        amazon_region: eu-central-1
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_check_required: '"Yes"'
+        kafka_topic_raw_snapshot: BLE-EU-SYS-TELEMETRY-SNAPSHOT-NA-NA
+        instrumentation_compliance_region: fr
+        bolt_ebr_counter: '3'
+        kafka_broker_list: '!ImportValue KafkaBrokerString'
+        skip_http_calls_indicator: '"NO"'
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        security_type: Bearer Token
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIIngestSnapshot
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'47':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'false'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '46'
+#exporting lambda resource in cloudformation
+'48':
+    DisplayName: lambda-export
+    Deploy: 'false'
+    BaseTemplate: lambda-output
+    Merge: '46'
+
+
+#deploying lambda CumAPIGetSnapshotControlMetadata
+'49':
+    DisplayName: CumAPIGetSnapshotControlMetadata
+    LambdaFunctionName: CumAPIGetSnapshotControlMetadata
+    # Version number will be added by the CF template
+    ZipName: lambda-snp-secure-metadata
+    CheckSumKey: lambda-snp-secure-metadata
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.SnapshotSecureMetadata::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        security_type: Bearer Token
+        snapshot_secure_cdx_endpoint_method: POST
+        #Need to update As per Environment
+        snapshot_secure_cdx_url: 'http://52.8.203.54:7003/api/cdx/v1/blengp/snapshot/secure'
+        sts_check_required: '"YES"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url: '!ImportValue STS-VPCE-URL'
+        bolt_ebr_delay: '10'
+        bolt_ebr_counter: '3'
+        http_connection_request_timeout: '10000'
+        http_connect_timeout: '10000'
+        http_socket_timeout: '10000'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        http_skip_ssl_verification: 'true'
+    StackName: CumAPIGetSnapshotControlMetadata
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'50':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '49'
+#exporting lambda resource in cloudformation
+'51':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '49'
+
+
+#deploying lambda CumAPIGetSnapshotControlRepos
+'52':
+    DisplayName: CumAPIGetSnapshotControlRepos
+    LambdaFunctionName: CumAPIGetSnapshotControlRepos
+    # Version number will be added by the CF template
+    ZipName: lambda-secure-snp-ctrlrepo
+    CheckSumKey: lambda-secure-snp-ctrlrepo
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.BleNgpSecureSnapshotControlRepos::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        security_type: 'Bearer Token'
+        sts_check_required: '"Yes"'
+        #Need to update As per Environment
+        snapshot_secure_cdx_url: 'http://52.8.203.54:7003/api/cdx/v1/blengp/snapshot/secure'
+        snapshot_secure_cdx_endpoint_method: POST
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url: '!ImportValue STS-VPCE-URL'
+        bolt_ebr_delay: '10'
+        bolt_ebr_counter: '3'
+        http_connection_request_timeout: '10000'
+        http_connect_timeout: '10000'
+        http_socket_timeout: '10000'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        http_skip_ssl_verification: 'true'
+    StackName: CumAPIGetSnapshotControlRepos
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'53':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '52'
+#exporting lambda resource in cloudformation
+'54':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '52'
+
+
+#deploying lambda CumAPIDiscover
+'55':
+    DisplayName: CumAPIDiscover
+    LambdaFunctionName: CumAPIDiscover
+    # Version number will be added by the CF template
+    ZipName: lambda-discover
+    CheckSumKey: lambda-discover
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.Discover::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        cdx_get_config_url: '!ImportValue cdxUrlDiscover'
+        bolt_ebr_counter: '3'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        config_bucket: '!ImportValue ocl-configurations-dev'
+        cdx_url_discover_method: GET
+        discovery_folder_path: /ble/Discovery/active
+        flow_name: 'Cumulus.BleExp.Discover.Lambda'
+        http_skip_ssl_verification: 'true'
+        config_file : 'BLENGP'
+        config_key_prefix : 'BLEapp.discover'
+    StackName: CumAPIDiscover
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'56':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '55'
+#exporting lambda resource in cloudformation
+'57':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '55'
+
+
+#deploying lambda CumAPIGetServerTime
+'58':
+    DisplayName: CumAPIGetServerTime
+    LambdaFunctionName: CumAPIGetServerTime
+    # Version number will be added by the CF template
+    ZipName: lambda-get-server-time
+    CheckSumKey: lambda-get-server-time
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.GetServerTime::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        security_type: 'Bearer Token'
+        sts_check_required: '"Yes"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url : '!ImportValue STS-VPCE-URL'
+        bolt_ebr_delay: '10'
+        bolt_ebr_counter: '3'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+    StackName: CumAPIGetServerTime
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'59':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '58'
+#exporting lambda resource in cloudformation
+'60':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '58'
+
+
+#deploying lambda CumAPIAppKeystoreCreate
+'61':
+    DisplayName: CumAPIAppKeystoreCreate
+    LambdaFunctionName: CumAPIAppKeystoreCreate
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    CheckSumKey: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreCreate::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name: 'Cumulus.BleExp.AppKeyStoreCreate.Lambda'
+        bolt_ebr_counter: '3'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        security_type: Bearer Token
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIAppKeystoreCreate
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'62':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '61'
+#exporting lambda resource in cloudformation
+'63':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '61'
+
+
+#deploying lambda CumAPIAppKeystoreDelete
+'64':
+    DisplayName: CumAPIAppKeystoreDelete
+    LambdaFunctionName: CumAPIAppKeystoreDelete
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    CheckSumKey: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreDelete::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name: 'Cumulus.BleExp.AppKeyStoreDelete.Lambda'
+        bolt_ebr_counter: '3'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        security_type: Bearer Token
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIAppKeystoreDelete
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'65':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '64'
+#exporting lambda resource in cloudformation
+'66':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '64'
+
+
+#deploying lambda CumAPIAppKeystoreGet
+'67':
+    DisplayName: CumAPIAppKeystoreGet
+    LambdaFunctionName: CumAPIAppKeystoreGet
+    # Version number will be added by the CF template
+    ZipName: lambda-app-keystore
+    CheckSumKey: lambda-app-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraAppKeystoreGet::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        dax_use: '"Yes"'
+        dynamodb_table_appinfra_appkey: appinfra-appkeystore
+        flow_name: 'Cumulus.BleExp.AppKeyStoreGet.Lambda'
+        bolt_ebr_counter: '3'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        security_type: Bearer Token
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIAppKeystoreGet
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'68':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '67'
+#exporting lambda resource in cloudformation
+'69':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '67'
+
+
+#deploying lambda CumAPIUserKeystore
+'70':
+    DisplayName: CumAPIUserKeystore
+    LambdaFunctionName: CumAPIUserKeystore
+    # Version number will be added by the CF template
+    ZipName: lambda-user-keystore
+    CheckSumKey: lambda-user-keystore
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.AppInfraUserKeystore::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_url: '!ImportValue STS-VPCE-URL'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        dax_use: '"Yes"'
+        bolt_ebr_counter: '3'
+        dynamodb_table_appinfra_userkey: appinfra-userkeystore
+        flow_name: 'Cumulus.BleExp.UserKeyStore.Lambda'
+        amazon_region: eu-central-1
+        bolt_ebr_delay: '10'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        security_type: Bearer Token
+        dax_endpoint: '!ImportValue DAX-CumClusterDax'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+    StackName: CumAPIUserKeystore
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'71':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '70'
+#exporting lambda resource in cloudformation
+'72':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '70'
+
+
+#deploying lambda CumAPIRefreshClientConfig
+'73':
+    DisplayName: CumAPIRefreshClientConfig
+    LambdaFunctionName: CumAPIRefreshClientConfig
+    # Version number will be added by the CF template
+    ZipName: lambda-refresh-client-config
+    CheckSumKey: lambda-refresh-client-config
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.RefreshClientConfig::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        #Need to update As per Environment
+        config_bucket: '!ImportValue ocl-configurations-dev'
+        client_config_folder_path: ble/ClientConfig/active
+    StackName: CumAPIRefreshClientConfig
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'74':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '73'
+#exporting lambda resource in cloudformation
+'75':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '73'
+
+
+#deploying lambda CumAPIRefreshDiscovery
+'76':
+    DisplayName: CumAPIRefreshDiscovery
+    LambdaFunctionName: CumAPIRefreshDiscovery
+    # Version number will be added by the CF template
+    ZipName: lambda-refresh-discovery
+    CheckSumKey: lambda-refresh-discovery
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.RefreshDiscovery::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        #Need to update As per Environment
+        config_bucket: '!ImportValue ocl-configurations-dev'
+        discovery_folder_path: ble/Discovery/active
+    StackName: CumAPIRefreshDiscovery
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'77':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '76'
+#exporting lambda resource in cloudformation
+'78':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '76'
+
+
+#deploying lambda CumAPIRefreshResourceBundle
+'79':
+    DisplayName: CumAPIRefreshResourceBundle
+    LambdaFunctionName: CumAPIRefreshResourceBundle
+    # Version number will be added by the CF template
+    ZipName: lambda-refresh-redis-cache
+    CheckSumKey: lambda-refresh-redis-cache
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.RefreshRedisCache::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        config_redis_endpoint: '!ImportValue REDIS-Endpoint'
+        config_redis_is_tls_enabled: '!ImportValue Redis-IsTLSEnabled'
+        db_to_refresh: resource_bundle
+    StackName: CumAPIRefreshResourceBundle
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'80':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '79'
+#exporting lambda resource in cloudformation
+'81':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '79'
+
+
+#deploying lambda CumAPIRefreshClientPreferences
+'82':
+    DisplayName: CumAPIRefreshClientPreferences
+    LambdaFunctionName: CumAPIRefreshClientPreferences
+    # Version number will be added by the CF template
+    ZipName: lambda-refresh-redis-cache
+    CheckSumKey: lambda-refresh-redis-cache
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.RefreshRedisCache::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        config_redis_endpoint: '!ImportValue REDIS-Endpoint'
+        config_redis_is_tls_enabled: '!ImportValue Redis-IsTLSEnabled'
+        db_to_refresh: cp_preferences
+    StackName: CumAPIRefreshClientPreferences
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'83':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '82'
+#exporting lambda resource in cloudformation
+'84':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '82'
+
+
+#deploying lambda CumApiDlqSinkToS3
+'85':
+    DisplayName: CumApiDlqSinkToS3
+    LambdaFunctionName: CumApiDlqSinkToS3
+    # Version number will be added by the CF template
+    ZipName: lambda-dlq-sink
+    CheckSumKey: lambda-dlq-sink
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.DLQSink::handleRequest'
+    MemorySize: '1024'
+    Timeout: '30'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: eu-central-1
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        #Need to update As per Environment
+        bucket_datalake_local: '!ImportValue local-data-lake-dev'
+    StackName: CumApiDlqSinkToS3
+    Runtime: java8
+#adding SQS trigger to lambda for DLQ-Notification-Subsystem
+'86':
+    DisplayName: SQSTriggerLambda0M
+    ResourceID: SQSTriggerLambda0M
+    QueueName: DLQ-Notification-Subsystem
+    Deploy: 'true'
+    BaseTemplate: lambda-sqs-trigger
+    Merge: '85'
+#adding loggroup subscription in cloudformation
+'87':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '85'
+#exporting lambda resource in cloudformation
+'88':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '85'
+
+
+#deploying lambda CumApiPostDiagnosticCode
+'89':
+    DisplayName: CumApiPostDiagnosticCode
+    LambdaFunctionName: CumApiPostDiagnosticCode
+    # Version number will be added by the CF template
+    ZipName: lambda-diagnostic-code
+    CheckSumKey: lambda-diagnostic-code
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.SnapshotSecureDiagnostic::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_check_required: '"Yes"'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        sts_url: '!ImportValue STS-VPCE-URL'
+        security_type: 'Bearer Token'
+        kms_data_cache_capacity: '100'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        bcrypt_logrounds: '!ImportValue bcryptLogrounds'
+        bcrypt_salt: '!ImportValue bcryptSalt'
+        http_connection_request_timeout: '5000'
+        http_connect_timeout: '5000'
+        http_socket_timeout: '5000'
+    StackName: CumApiPostDiagnosticCode
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'90':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '89'
+#exporting lambda resource in cloudformation
+'91':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '89'
+
+#deploying lambda CumAPIDeidentificationLambda
+'92':
+    DisplayName: CumAPIDeidentificationLambda
+    LambdaFunctionName: CumAPIDeidentificationLambda
+    # Version number will be added by the CF template
+    ZipName: lambda-deidentification
+    CheckSumKey: lambda-deidentification
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.DeIdentification::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        bcrypt_salt: '!ImportValue bcryptSalt'
+    StackName: CumAPIDeidentificationLambda
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'93':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '92'
+#exporting lambda resource in cloudformation
+'94':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '92'
+
+#deploying lambda CumAPIRefreshDefaultAlertSettings
+'95':
+    DisplayName: CumAPIRefreshDefaultAlertSettings
+    LambdaFunctionName: CumAPIRefreshDefaultAlertSettings
+    # Version number will be added by the CF template
+    ZipName: lambda-refresh-redis-cache
+    CheckSumKey: lambda-refresh-redis-cache
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.RefreshRedisCache::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        config_redis_endpoint: '!ImportValue REDIS-Endpoint'
+        config_redis_is_tls_enabled: '!ImportValue Redis-IsTLSEnabled'
+        db_to_refresh: default_alert_settings
+    StackName: CumAPIRefreshDefaultAlertSettings
+    Runtime: java8
+#adding loggroup subscription in cloudformation
+'96':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '95'
+#exporting lambda resource in cloudformation
+'97':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '95'
+
+#deploying lambda CumAPIRemoteDiagnosticLog
+'98':
+    DisplayName: CumAPIRemoteDiagnosticLog
+    LambdaFunctionName: CumAPIRemoteDiagnosticLog
+    # Version number will be added by the CF template
+    ZipName: lambda-remote-diagnostic-log
+    CheckSumKey: lambda-remote-diagnostic-log
+    Handler: 'com.medtronic.diabetes.carelink.cumulus.blengp.BleNgpRemoteDiagnosticLog::handleRequest'
+    MemorySize: '1024'
+    Timeout: '27'
+    Deploy: 'true'
+    BaseTemplate: lambda-base
+    Variables:
+        amazon_region: 'eu-central-1'
+        avro_schema_remote_diagnostic: '/avroSchema_RemoteDiagnosticLog.avsc'
+        bcrypt_salt: '$2a$04$D6wRUBGZc0MqxirQ82OLFu'
+        bolt_ebr_counter: '3'
+        bolt_ebr_delay: '10'
+        http_connect_timeout: '5000'
+        http_connection_request_timeout: '5000'
+        http_socket_timeout: '5000'
+        instrumentation_compliance_region: 'fr'
+        kms_data_cache_capacity: '100'
+        kms_key_data_arn: '!ImportValue KMS-CumKmsKey'
+        kms_max_entry_age: '600000'
+        kms_max_entry_messages: '100'
+        remote_diagnostic_s3_file_path: '!ImportValue local-data-lake-dev'
+        security_type: Bearer Token
+        skip_http_calls_indicator: '"NO"'
+        sts_check_required: '"Yes"'
+        sts_role: '!ImportValue Role-STSAssumeRoleArn'
+        sts_url: '!ImportValue STS-VPCE-URL'
+    StackName: CumAPIRemoteDiagnosticLog
+    Runtime: java8
+#exporting lambda resource in cloudformation
+'99':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '98'

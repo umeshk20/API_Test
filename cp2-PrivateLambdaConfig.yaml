@@ -1,0 +1,65 @@
+#deploying lambda CumApiPdeAppPushMessage
+'1':
+	DisplayName : CumApiPdeAppPushMessage
+	Jar : lambda-push-notification-message-1.0.0.jar
+	LambdaFunctionName : CumApiPdeAppPushMessage
+	variables :
+		bolt_ebr_counter : 3
+		bolt_ebr_delay : 100
+		cdx_url_patient_preferences : http://10.178.104.55/api/cdx/v1/connect/preferences
+		config_redis_endpoint : redis://redis-cluster.hlrjx1.ng.0001.euc1.cache.amazonaws.com
+		db_to_refresh : resource_bundle
+		flow_name_prefix : CumulusPde
+		http_connect_timeout : 10000
+		http_connection_request_timeout : 10000
+		http_socket_timeout :  10000
+		instrumentation_compliance_region : fr
+		push_message_table_name : push_message_instance_details
+		registration_table_name : registration_details
+		resource_bundle_alarm_prefix :  page.connect.sms.content.ble.alarm.
+		notification_sns_topic_arn : arn:aws:sns:eu-central-1:812470574530:ProcessNotificationTopic
+		default_push_message : Alert Received
+		soundFile : CP_notification_tone.wav
+		use_dax : YES
+	APIName : appPushMessage
+	APIGateway Name : pde-cumulus-private
+	ResourcePolicy :
+	 {
+	"Version": "2012-10-17",
+	"Statement": [
+	{
+	"Effect": "Allow",
+	"Principal": "",
+	"Action": "execute-api:Invoke",
+	"Resource": "arn:aws:execute-api:eu-central-1:812470574530:2nfv4cw650/"
+	}
+	]
+	}
+	Path : https://2nfv4cw650.execute-api.eu-central-1.amazonaws.com/dev/pde/v2/appPushMessage
+	Method : POST
+	Handler : com.medtronic.diabetes.carelink.pde.AppPushMessage::handleRequest
+	Existingrole : CumLambdaAccessRole
+	VirtualPrivateCloud (VPC) : vpc-041837f4a877114f0(10.178.104.0/21) | StackSet-LZ-VPC-a81772f4-b6fc-4f2a-bd29-2129ca9e93ef
+	Subnets : subnet-0408fcf8198aa8815 (10.178.104.0/23) | eu-central-1a App subnet 1A
+	Security groups: sg-0304ae99778feacdd (CumSGAppBroker) | CumSGAppBroker
+
+#creating lambda alias in cloudformation
+'2':
+    DisplayName: lambda-alias
+    Deploy: 'true'
+    BaseTemplate: lambda-alias
+    Merge: '1'
+#adding loggroup subscription in cloudformation
+'3':
+    DisplayName: lambda-subscribe-loggroup
+    Deploy: 'true'
+    BaseTemplate: lambda-subscribe-loggroup
+    LogShipperLambda: CumAPILogstoElasticSearch
+    FilterPattern: '?instrumentation_type'
+    Merge: '1'
+#exporting lambda resource in cloudformation
+'4':
+    DisplayName: lambda-export
+    Deploy: 'true'
+    BaseTemplate: lambda-output
+    Merge: '1'

@@ -1,0 +1,281 @@
+# starting API gateway creation using main base template
+'1':
+    DisplayName: 'CP-Public-API-GW-creation'
+    ApiGatewayStageName: dev
+    ApiGatewayName: CarePartner-Public-Api-Gateway
+    DomainName: eyoceu.clcloud.me
+    BasePath: cum
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-main
+    StackName: Prod-CarePartnerAPIGW-Public
+# creating API GW resource
+'2':
+    DisplayName: 'CP-Public-API-GW-root-resource'
+    ResourceID: CumApiGatewayResourceConnect
+    PathPart: connect
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-root-resource
+    Merge: '1'
+# creating API GW resource
+'3':
+    DisplayName: 'Public-API-GW-resource-pde'
+    ResourceID: ApiGatewayResourcepde
+    PathPart: pde
+    ParentResourceID: CumApiGatewayResourceConnect
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'4':
+    DisplayName: 'Public-API-GW-resource-v1'
+    ResourceID: ApiGatewayResourceV1
+    PathPart: v1
+    ParentResourceID: ApiGatewayResourcepde
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'5':
+    DisplayName: 'Public-API-GW-resource-registerAppPush'
+    ResourceID: ApiGatewayResourceAppPush
+    PathPart: registerAppPush
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'6':
+    DisplayName: 'Public-API-GW-resource-deregisterAppPush'
+    ResourceID: ApiGatewayResourceDeregisterAppPush
+    PathPart: deregisterAppPush
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'7':
+    DisplayName: 'Public-API-GW-resource-getLocal'
+    ResourceID: ApiGatewayResourceGetLocal
+    PathPart: getLocal
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'8':
+    DisplayName: 'Public-API-GW-resource-updatelocal'
+    ResourceID: ApiGatewayResourceUpdatelocal
+    PathPart: updatelocal
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'9':
+    DisplayName: 'Public-API-GW-resource-getAppPushDeliveryActivationStatus'
+    ResourceID: ApiGatewayResourcegetAppPushDeliveryActivationStatus
+    PathPart: getAppPushDeliveryActivationStatus
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'10':
+    DisplayName: 'Public-API-GW-resource-setAppPushDeliveryActivationStatus'
+    ResourceID: ApiGatewayResourcesetAppPushDeliveryActivationStatus
+    PathPart: setAppPushDeliveryActivationStatus
+    ParentResourceID: ApiGatewayResourceV1
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'11':
+    DisplayName: 'Public-API-GW-resource-carepartner'
+    ResourceID: ApiGatewayResourcecarepartner
+    PathPart: carepartner
+    ParentResourceID: CumApiGatewayResourceConnect
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'12':
+    DisplayName: 'Public-API-GW-resource-DMv2'
+    ResourceID: ApiGatewayResourceDMV2
+    PathPart: v2
+    ParentResourceID: ApiGatewayResourcecarepartner
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'13':
+    DisplayName: 'Public-API-GW-resource-display'
+    ResourceID: ApiGatewayResourcedisplay
+    PathPart: display
+    ParentResourceID: ApiGatewayResourceDMV2
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+# creating API GW resource
+'14':
+    DisplayName: 'Public-API-GW-resource-message'
+    ResourceID: ApiGatewayResourcemessage
+    PathPart: message
+    ParentResourceID: ApiGatewayResourcedisplay
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-resource
+    Merge: '1'
+
+# creating API GW method for non-root resource
+'15':
+    DisplayName: 'Public-API-GW-Method-CumAPIRegisterAppPush'
+    ApiGatewayMethodID: ApiGatewayMethodRegisterAppPush
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIRegisterAppPush
+    ResourceID: ApiGatewayResourceAppPush
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'16':
+    DisplayName: 'Public-API-GW-Method-CumAPIDeRegisterAppPush'
+    ApiGatewayMethodID: ApiGatewayMethodDeregisterAppPush
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIDeRegisterAppPush
+    ResourceID: ApiGatewayResourceDeregisterAppPush
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'17':
+    DisplayName: 'Public-API-GW-Method-CumAPIgetLocal'
+    ApiGatewayMethodID: ApiGatewayMethodGetLocal
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIgetLocal
+    ResourceID: ApiGatewayResourceGetLocal
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'18':
+    DisplayName: 'Public-API-GW-Method-CumAPIupdateLocal'
+    ApiGatewayMethodID: ApiGatewayMethodUpdateLocal
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIupdateLocal
+    ResourceID: ApiGatewayResourceUpdatelocal
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'19':
+    DisplayName: 'Public-API-GW-Method-CumAPIgetAppPushDeliveryActivationStatus'
+    ApiGatewayMethodID: ApiGatewayMethodgetAppPushDeliveryActivationStatus
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIgetAppPushDeliveryActivationStatus
+    ResourceID: ApiGatewayResourcegetAppPushDeliveryActivationStatus
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'20':
+    DisplayName: 'Public-API-GW-Method-CumAPIsetAppPushDeliveryActivationStatus'
+    ApiGatewayMethodID: ApiGatewayMethodsetAppPushDeliveryActivationStatus
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIsetAppPushDeliveryActivationStatus
+    ResourceID: ApiGatewayResourcesetAppPushDeliveryActivationStatus
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+# creating API GW method for non-root resource
+'21':
+    DisplayName: 'Public-API-GW-Method-CumAPIappMessage'
+    ApiGatewayMethodID: ApiGatewayMethodappMessage
+    HttpMethod: POST
+    IntegrationHttpMethod: POST
+    FunctionName: CumAPIappMessage
+    ResourceID: ApiGatewayResourcemessage
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-method
+    Merge: '1'
+
+# Adding lambda invoke permissions
+'22':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeRegisterAppPush'
+    LambdaInvokeID: ApiGatewayMethodRegisterAppPushInvoke
+    FunctionName: CumApiPdeRegisterAppPush
+    ApiGatewayMethodID: ApiGatewayMethodRegisterAppPush
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'23':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeDeregisterAppPush'
+    LambdaInvokeID: ApiGatewayMethodDeregisterAppPushInvoke
+    FunctionName: CumApiPdeDeregisterAppPush
+    ApiGatewayMethodID: ApiGatewayMethodDeregisterAppPush
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'24':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeGetLocale'
+    LambdaInvokeID: ApiGatewayMethodGetLocaleInvoke
+    FunctionName: CumApiPdeGetLocale
+    ApiGatewayMethodID: ApiGatewayMethodGetLocal
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'25':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeUpdateLocale'
+    LambdaInvokeID: ApiGatewayMethodUpdateLocalInvoke
+    FunctionName: CumApiPdeUpdateLocale
+    ApiGatewayMethodID: ApiGatewayMethodUpdateLocal
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'26':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeGetAppPushDeliveryActivationStatus'
+    LambdaInvokeID: ApiGatewayMethodgetAppPushDeliveryActivationStatusInvoke
+    FunctionName: CumApiPdeGetAppPushDeliveryActivationStatus
+    ApiGatewayMethodID: ApiGatewayMethodgetAppPushDeliveryActivationStatus
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'27':
+    DisplayName: 'Public-API-GW-Invoke-CumApiPdeSetAppPushDeliveryActivationStatus'
+    LambdaInvokeID: ApiGatewayMethodsetAppPushDeliveryActivationStatusInvoke
+    FunctionName: CumApiPdeSetAppPushDeliveryActivationStatus
+    ApiGatewayMethodID: ApiGatewayMethodsetAppPushDeliveryActivationStatus
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Adding lambda invoke permissions
+'28':
+    DisplayName: 'Public-API-GW-Invoke-CumApiDisplayMessage'
+    LambdaInvokeID: ApiGatewayMethodappMessageInvoke
+    FunctionName: DisplayMessage
+    ApiGatewayMethodID: ApiGatewayMethodappMessage
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-lambda-permission
+    Merge: '1'
+# Deploying API GW with hardcoded dependancies
+'29':
+    DisplayName: 'CP-Public-API-GW-Deploy'
+    Deploy: 'true'
+    BaseTemplate: cp-public-apigateway-deploy
+    Merge: '1'
+# exporting API GW in cloudformation
+'30':
+    DisplayName: 'CP-Public-API-GW-Export'
+    ExportName: CarePartner-Public-APIGateway
+    Deploy: 'true'
+    BaseTemplate: cum-apigateway-output
+    Merge: '1'
