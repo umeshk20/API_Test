@@ -1,0 +1,464 @@
+pipeline{
+    // agent any
+    agent { label 'cumulus' }
+
+
+    environment{
+        // Environment variable 'AWS_DEFAULT_PROFILE' to use default AWS account 
+        AWS_DEFAULT_PROFILE = 'load-gen'
+        PYTHONUNBUFFERED = 1
+        // Below env variables are applicable for MDT CASE Environment
+        HTTP_PROXY = 'https://10.20.142.1:8080'
+        HTTPS_PROXY = 'https://10.20.142.1:8080'
+        NO_PROXY = 'medtronic.com,127.0.0.1,localhost'
+
+        //## Environment variables to be initialized as per environment in Pipeline:- 
+        AWS_ENV = 'lgen'
+        STACKNAME_PREFIX = 'Loadgen'
+        VPCID = 'vpc-0a218bdf78409b6d8'
+        APP_SUBNET_ID1 = 'subnet-00c5131424b744d98'
+        APP_SUBNET_ID2 = 'subnet-094a2ef87ef23db07'
+        APP_SUBNET_ID3 = 'subnet-093a7a387a8ec0b48'
+
+        // ALB config
+        ALB_SUBNET_ID1 = 'subnet-095d8e98057f3c7b9'
+        ALB_SUBNET_ID2 = 'subnet-04caf7f942e310cf1'
+        ALB_SUBNET_ID3 = 'subnet-04236a5a1a59e9db3'
+        TARGETPROTOCOL = 'HTTP'
+        TARGETPORT = '8080'
+        LISTENERPORT = '443'
+        LISTENERPROTOCOL = 'HTTPS'
+        HEALTHCHECKPATH = '/connect/actuator/health'
+        SSLCERTIFICATEARN = 'arn:aws:acm:eu-central-1:864341830589:certificate/bdc47464-3e71-41a7-934d-d5ff515cb896'
+
+        // Auto Scale Config
+        ASG_INSTANCE_TYPE = 'c4.xlarge'
+        ASG_MAXSIZE = 4
+        ASG_MINSIZE = 2
+        ASG_CPUMAXLIMIT = 70
+        ASG_CPUMINLIMIT = 30
+        ASG_MEMMAXLIMIT = 70
+        ASG_MEMMINLIMIT = 30
+
+        //## SSH Key Name (pem file) 
+        SSHKEYNAME = 'load-gen-keypair'
+        SSHKEY = 'load-gen-keypair.pem'
+
+        AWS_REGION = 'eu-central-1'
+        AVAILABILITY_ZONE1 = 'eu-central-1a'
+        AVAILABILITY_ZONE2 = 'eu-central-1b'
+        AVAILABILITY_ZONE3 = 'eu-central-1c'
+        REPO_BUILD_DIR = './cl-cumulus/'
+        REPO_BUILD_DIR_MICROSERVICE = './microservice-snapshot-processor/'
+        DEVOPS_REPO_DIR = './cl-cumulus/devops/'
+
+        // To be used by artifactory for build uploads
+        ARTIFACTORY_REPO = 'cumulus-gradle-dev-local'
+        PROJECT = 'MMT7333'
+        DEPLOY_ENV = 'LoadGen'
+        BUILD_DATE = sh(script: "date +%F", returnStdout: true).trim()
+
+        //## Bucket name
+        BUILD_BUCKET = 'cl-cumulus-build-loadgen'
+        CFTEMPLATE_BUCKET = 'cl-cumulus-cftemplates-loadgen'
+        AMIPKG_BUCKET = 'cl-cumulus-ami-pkgs-loadgen'
+        S3_BUCKET_URL = 'https://cl-cumulus-cftemplates-loadgen.s3.eu-central-1.amazonaws.com'
+
+        //environment variables for contrast
+        CONTRAST_ENV ='Development'
+        CONTRAST_SECURITY_LOG_LEVEL = 'ERROR'
+        CONTRAST_LEVEL = 'ERROR'
+        CONTRAST_SECURITY_LOG_SIZE = '10'
+        CONTRAST_LOG_SIZE = '10'
+        BRANCH_NAME = "nimbus"
+        GIT_USER=""
+        GIT_PWD=""
+        ARTIFACTORY_USER=""
+        ARTIFACTORY_PWD=""
+    }
+
+    stages{
+        stage('SCM source code checkout'){
+            steps{
+                sh '''
+                    echo off
+                    echo "============ Build Details ==============="
+                    echo "Artifactory Repository : ${ARTIFACTORY_REPO}"
+                    echo "Build Number : ${BUILD_NUMBER}"
+                    echo "Project name : ${PROJECT}"
+                    echo "Deployment Environment : ${DEPLOY_ENV}"
+                    echo "Build Date : ${BUILD_DATE}"
+                    echo "Current directory on jenkins machine:-"
+                    pwd
+                    echo "========================================"
+                '''
+                echo "Checkout scm ..."
+                checkout scm
+            }
+        }
+        // ## Open hook provided for HPFortify 
+        stage('HPFortify: Static code analysis'){ 
+            steps {
+                sh '''
+                    echo off
+                    echo "### HOOKS: Static code analysis..."
+                '''
+            }
+        }
+
+        // Clean Workspace to remove untracked files and directories
+        stage('clean workspace'){
+            steps{
+                sh '''
+                    echo off
+                    echo "### clean workspace..."
+                    pwd
+                    ls -l
+                    cd ${REPO_BUILD_DIR}
+                    chmod 400 ./devops/config/keys/*.pem
+                    git clean -fdx 
+                '''
+            }
+        }
+
+        // Build version update
+        stage('Build version update'){
+            steps {
+                sh '''
+                    echo off
+                    echo "### Build Version Update...."
+                    cd ${REPO_BUILD_DIR}
+                    python3 versionUpdate.py settings.gradle --versionfile version --prefix "gradle.ext.version" --jenkinsBuildNo ${BUILD_NUMBER}
+                '''
+                //checkin scm
+            }
+        }
+
+        // Build cl-cumulus project using gradle
+/*        stage('Gradle: Build code'){
+            steps {
+                // Build cl-cumulus project only
+                sh '''
+                    echo off
+                    echo "### Gradle Build ...."
+                    export LANG=en_IN
+                    echo $LANG
+                    cd ${REPO_BUILD_DIR}
+                    gradle clean buildJar copyBuilds srcZip copyZip -DXmx=4096m -DXX:MaxPermSize=1024m
+                    cd ${REPO_BUILD_DIR_MICROSERVICE}
+                    gradle clean build copyBuilds srcZip copyZip -DXmx=4096m -DXX:MaxPermSize=1024m
+                '''
+            }
+        }
+*/
+/*        stage('Append Checksum and tag Version'){
+            steps {
+
+                sh '''
+                    echo off
+                    echo "### Push version changes to Git"
+                    cd ${REPO_BUILD_DIR}
+                    python devops/addChecksum.py --buildDir build/ --checksumFile build/checksumFile.yml
+
+
+                    git config --global push.default matching
+                    Version=`cat version`
+                    git add version
+                    git add settings.gradle
+                    git commit -m "version file changed by Jenkins Build Version=$Version"
+                    git push http://${GIT_USER}:${GIT_PWD}@msplap318-pr.wby1-prd.medtronic.com:7990/scm/cum/connect.git HEAD:refs/heads/${BRANCH_NAME}
+                    git tag -a $Version -m "$Version"
+                    git push http://${GIT_USER}:${GIT_PWD}@msplap318-pr.wby1-prd.medtronic.com:7990/scm/cum/connect.git HEAD:refs/heads/${BRANCH_NAME} --tags
+                '''
+            }
+        }
+*/
+        // ## Open Hook Provided for Artifactory binary upload
+        stage('JFrog Artifactory: Upload binaries to binary repository manager'){ 
+            steps {
+                // JFrog Artifactory: an artifact repository manager
+                script{
+
+                // Find alternate way for this Artifactory server id registration
+                sh '''
+                    pwd
+                    echo "Version file location: ${REPO_BUILD_DIR}/version"
+                '''
+                def Build_val = readFile("${REPO_BUILD_DIR}/version")
+
+                rtServer (
+                    id: "Artifactory-1",
+                    url: "https://case.artifacts.medtronic.com/artifactory",
+                    username: "${ARTIFACTORY_USER}",
+                    password: "${ARTIFACTORY_PWD}",
+                    bypassProxy: true
+                )
+                rtUpload (
+                    serverId: "Artifactory-1",
+                    spec:
+                        """{
+                            "files": [
+                                {
+                                    "pattern": "${REPO_BUILD_DIR}/build/*.jar",
+                                    "target": "${ARTIFACTORY_REPO}/${PROJECT}/${DEPLOY_ENV}/$Build_val/"
+                                },
+                                {
+                                    "pattern": "${REPO_BUILD_DIR}/build/*.zip",
+                                    "target": "${ARTIFACTORY_REPO}/${PROJECT}/${DEPLOY_ENV}/$Build_val/"
+                                }
+                            ]
+                        }"""
+                )
+                // rtDownload (
+                //     serverId: "Artifactory-1",
+                //     spec:
+                //         """{
+                //             "files": [
+                //                 {
+                //                     "pattern": "*.jar",
+                //                     "target": "appsec_pipeline-generic-prod-virtual/Contrast_JAVA/"
+                //                 }
+                //         ]
+                //     }"""
+                // )
+                // xray scan report generation
+                // xrayScan (
+                //     serverId: "Artifactory-1",
+                //     // If the build name and build number are not set here, the current job name and number will be used:
+                //     // buildName: "my-build-name",
+                //     buildNumber: "${BUILD_NUMBER}",   
+                //     // If the build is found vulnerable, the job will fail by default. If you do not wish it to fail:
+                //     failBuild: false
+                // )
+                }
+            }
+        }
+
+        // ## Open Hook Provided for Xray artifact security check
+        stage('JFrog Xray: Binary security check'){
+            steps{
+                // JFrog Xray: a binary analysis tool for performing recursive security scans and dependency analysis
+                sh '''
+                    echo off
+                    echo "### HOOKS: Add call to Security check..."
+                '''
+            }
+        }
+
+/*        stage('AWS CLI: Artifacts Publish to S3 Bucket'){
+            steps {
+                // Upload/Publish Build artifacts (Binaries) to S3 bucket using aws cli or Python scripts
+                sh '''
+                    echo off
+                    aws configure list
+                    aws s3 ls
+                '''
+                sh '''
+                    echo off
+                    echo "### Upload Build Artifacts to S3 bucket..."
+                    cd ${DEVOPS_REPO_DIR}
+                    aws s3 ls ${BUILD_BUCKET}
+                    python3 -W ignore uploadBuildArtifacts.py --templatePath ../build/ --bucketName ${BUILD_BUCKET} --overwrite yes --logLevel INFO
+                    aws s3 ls ${BUILD_BUCKET}
+                '''
+            }
+        }
+        // End of on-premise Build process ....
+        // ------------------------
+
+        // Start of on cloud Deployment orchestration .... 
+        // Deploy Application components
+        stage('On Cloud :- Upload & Deploy Application Build and CF Templates'){
+            steps {
+                // # Upload Application CF Templates to S3 Bucket
+                sh '''
+                    echo "### Upload Application CF Templates to s3 bucket"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore uploadTemplates.py --templatePath application/templates/ --bucketName ${CFTEMPLATE_BUCKET} --overwrite yes --logLevel INFO
+                '''
+
+                // Required when running as separate pipeline for cluster
+                sh '''
+                    echo off
+                    echo "### Upload SSM Parameters to SSM Parameter store"
+                    export LANG=en_IN
+                    echo $LANG
+                    cd ${DEVOPS_REPO_DIR}
+                    pwd
+                    ls -l config/ssm-data-${AWS_ENV}.cfg
+                    python3 -W ignore ssmDeploy.py --fileName ssm-data-${AWS_ENV}.cfg
+                    python3 -W ignore application/scripts/getConfigsFromCDX.py --configfilepath cp-cdx-configvalue-${AWS_ENV}.yaml --templateUrl  ${S3_BUCKET_URL}/cum-cdx-config-template.yaml --logLevel INFO
+                '''
+
+                // # Create DDB Tables - Moved this to Application deployment stage
+                sh '''
+                    echo off
+                    echo "Create stack for DynamoDb Tables using CF Templates in s3 bucket"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/deployDynamodbTables.py --stackName ${STACKNAME_PREFIX}-App-DDB --templateUrl ${S3_BUCKET_URL}/cum-dynamodb-table.yaml --logLevel INFO
+                '''
+
+                // # Create ALB for springboot
+                sh '''
+                    echo off
+                    echo "Create ALB using CF Template in S3 bucket"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/deployALB.py --stackName ${STACKNAME_PREFIX}-App-ALB --templateUrl ${S3_BUCKET_URL}/cum-alb.yaml --vpcId $VPCID --targetProtocol ${TARGETPROTOCOL} --targetPort ${TARGETPORT} --listenerPort ${LISTENERPORT} --listenerProtocol ${LISTENERPROTOCOL} --albSubnet1 ${ALB_SUBNET_ID1} --albSubnet2 ${ALB_SUBNET_ID2} --sslCertificateArn ${SSLCERTIFICATEARN} --healthCheckPath ${HEALTHCHECKPATH} --logLevel INFO
+                '''
+
+                // # Associate ALB to WAF 
+                sh '''
+                    echo off
+                    echo "### Create API Gateway and WAF association"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/WAFAssociation.py --region ${AWS_REGION} --name snp-processor --stage ${AWS_ENV} --WebACLIdSSM WebAclId --isApiGateway FALSE--logLevel INFO
+                '''
+
+                // # Create ASG for springboot
+                sh '''
+                    echo off
+                    echo "Create ASG using CF Template in S3 bucket"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 application/scripts/deployAutoScalingGroup.py --stackName ${STACKNAME_PREFIX}-App-ASG --templateUrl ${S3_BUCKET_URL}/cum-asg.yaml --instanceType ${ASG_INSTANCE_TYPE} --keyName ${SSHKEYNAME} --maxSize ${ASG_MAXSIZE} --minSize ${ASG_MINSIZE} --availabilityZone1 ${AVAILABILITY_ZONE1} --availabilityZone2 ${AVAILABILITY_ZONE2} --subnetID1 ${APP_SUBNET_ID1} --subnetID2 ${APP_SUBNET_ID2} --cpuMaxLimit ${ASG_CPUMAXLIMIT} --cpuMinLimit ${ASG_CPUMINLIMIT} --memMaxLimit ${ASG_MEMMAXLIMIT} --memMinLimit ${ASG_MEMMINLIMIT} --imageIdSSMKey springboot_ami_id --applicationJarURL s3://${BUILD_BUCKET}/microservice-snapshot-processor.jar --contrastJarURL s3://${BUILD_BUCKET}/contrast.jar --newRelicLicenseSSMKey newrelic_license --fileBeatLogDir /home/centos/snapshot-api/*.log --logStashServer1IPSSMKey logstash_ip1 --logStashServer2IPSSMKey logstash_ip2  --logStashServer3IPSSMKey logstash_ip3 --fileBeatConfigS3Path s3://${AMIPKG_BUCKET}/config/s3-artifacts/instrumentation/filebeat/config/filebeat.yml  --contrastenv ${CONTRAST_ENV} --contrastsecurityloglevel ${CONTRAST_SECURITY_LOG_LEVEL} --contrastlevel ${CONTRAST_LEVEL} --contrastsecuritylogsize ${CONTRAST_SECURITY_LOG_SIZE} --contrastlogsize ${CONTRAST_LOG_SIZE} --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml --awsenv ${AWS_ENV} --logLevel INFO  
+                '''
+
+                // # Create Lambda applications
+                sh '''
+                    echo "### Create stacks to deploy Lambda applications as per config for Cumulus"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/configDeploy.py --templateBucket ${CFTEMPLATE_BUCKET} --subnetID1 $APP_SUBNET_ID1 --subnetID2 $APP_SUBNET_ID2 --s3BucketJar ${BUILD_BUCKET} --configFilePath config/lambda_config-${AWS_ENV}.yaml --baseTemplatePath application/templates/lambda-base-templates/ --logLevel INFO --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+
+
+                    echo "### Create stacks to deploy Lambda applications as per config for CarePartner"
+                    python3 -W ignore application/scripts/configDeploy.py --templateBucket ${CFTEMPLATE_BUCKET} --subnetID1 $APP_SUBNET_ID1 --subnetID2 $APP_SUBNET_ID2 --s3BucketJar ${BUILD_BUCKET} --configFilePath config/cp-lambda_config-${AWS_ENV}.yaml --baseTemplatePath application/templates/lambda-base-templates/ --logLevel INFO --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Create API Gateway for Cumulus
+                sh '''
+                    echo off
+                    echo "### Create stack to deploy API Gateway as per config"
+                    cd ${DEVOPS_REPO_DIR}
+                    echo "## Create private API gateway for Cumulus"
+                    python3 -W ignore application/scripts/configDeploy.py --templateBucket ${CFTEMPLATE_BUCKET} --subnetID1 $APP_SUBNET_ID1 --subnetID2 $APP_SUBNET_ID2 --s3BucketJar ${BUILD_BUCKET} --configFilePath config/private-apigateway-config-${AWS_ENV}.yaml --baseTemplatePath application/templates/apigateway-base-templates/ --logLevel INFO --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                    
+                    echo "## Update private API gateway Resource Policy"
+                    python3 application/scripts/updateResourcePolicy.py --configFile config/private-apigateway-config-${AWS_ENV}.yaml  --logLevel INFO
+
+                    echo "## Create Public API Gateway for Cumulus"
+                    python3 -W ignore application/scripts/configDeploy.py --templateBucket ${CFTEMPLATE_BUCKET} --subnetID1 $APP_SUBNET_ID1 --subnetID2 $APP_SUBNET_ID2 --s3BucketJar ${BUILD_BUCKET} --configFilePath config/public-apigateway-config-${AWS_ENV}.yaml --baseTemplatePath application/templates/apigateway-base-templates/ --logLevel INFO --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+
+                // # Associate Public API Gateway for Cumulus to WAF
+                sh '''
+                    echo off
+                    echo "### Create API Gateway and WAF association for Cumulus"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/WAFAssociation.py --region ${AWS_REGION} --name Cum-Public-Api-Gateway --stage ${AWS_ENV} --WebACLIdSSM WebAclId --isApiGateway TRUE --logLevel INFO
+                '''
+
+                // # Create API Gateway for CarePartner
+                sh '''
+                    echo off
+                    echo "### Create stack to deploy API Gateway as per config"
+                    cd ${DEVOPS_REPO_DIR}
+                    echo "## Create Public API Gateway for CarePartner"
+                    python3 -W ignore application/scripts/configDeploy.py --templateBucket ${CFTEMPLATE_BUCKET} --subnetID1 $APP_SUBNET_ID1 --subnetID2 $APP_SUBNET_ID2 --s3BucketJar ${BUILD_BUCKET} --configFilePath config/cp-public-apigateway-config-${AWS_ENV}.yaml --baseTemplatePath application/templates/apigateway-base-templates/ --logLevel INFO --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Associate Public API Gateway for CarePartner to WAF 
+                sh '''
+                    echo off
+                    echo "### Create API Gateway and WAF association for CarePartner"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/WAFAssociation.py --region ${AWS_REGION} --name CarePartner-Public-Api-Gateway --stage ${AWS_ENV} --WebACLIdSSM WebAclId --isApiGateway TRUE --logLevel INFO
+                '''
+
+                // # Deploy AnalyticSinkTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy AnalyticSinkTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-analytic-sink --topology-class  com.medtronic.diabetes.carelink.cumulus.blengp.AnalyticSinkTopology --topology-name topology-analytic-sink --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --logLevel INFO --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy DlqSinkTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy DlqSinkTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-dlq-sink --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.DlqSinkTopology --topology-name topology-dlq-sink --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --logLevel INFO --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy NotificationProcessorTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy NotificationProcessorTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-notification-processor --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.NotificationProcessorTopology --topology-name topology-notification-processor --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy PeriodicHandoverTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy PeriodicHandoverTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-periodic-handover --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.PeriodicHandoverTopology --topology-name topology-periodic-handover --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy PeriodicProcessorTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy PeriodicProcessorTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-periodic-processor --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.Topology --topology-name topology-periodic-processor --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy SnapshotHandoverTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy SnapshotHandoverTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-snapshot-handover --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.SnapshotHandoverTopology --topology-name topology-snapshot-handover --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy SnapshotStorageTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy SnapshotStorageTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-snapshot-storage --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.SnapshotStorageTopology --topology-name topology-snapshot-storage --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Deploy ValidationTopology Topology 
+                sh '''
+                    echo off
+                    echo "### Deploy ValidationTopology Topology"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore application/scripts/stormTopologyDeploy.py --storm-topology-location ${BUILD_BUCKET} --topology-file topology-validation --topology-class com.medtronic.diabetes.carelink.cumulus.blengp.ValidationTopology --topology-name topology-validation --keyPath ./config/keys/${SSHKEYNAME}.pem --userName centos --nimbusSSMKey nimbus_ip --connectPublicIP false --topologyTimeout topology_sink_msg_timeout_sec --versionReferenceFile ../version --checksumFile ../build/checksumFile.yml
+                '''
+
+                // # Delete binary artifacts from S3 bucket
+                sh '''
+                    echo off
+                    echo "### Delete binary artifacts from S3 bucket"
+                    cd ${DEVOPS_REPO_DIR}
+                    python3 -W ignore DeleteS3object.py --S3BucketName ${BUILD_BUCKET} --logLevel INFO
+                '''
+
+            }
+        }
+*/
+        // # Run Smoke Test Suite
+        stage('Run Smoke Suite'){
+            steps{
+                sh'''
+                    echo off
+                    echo "### Run Smoke Suite..."
+                '''
+            }
+        }
+        // End of on cloud Deployment orchestration .... 
+    }
+}
+// ## End of Jenkinsfile
