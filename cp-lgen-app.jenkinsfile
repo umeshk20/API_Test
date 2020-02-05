@@ -114,9 +114,9 @@ pipeline{
                     echo "### clean workspace..."
                     pwd
                     ls -l
-                    cd ${REPO_BUILD_DIR}
-                    chmod 400 ./devops/config/keys/*.pem
-                    git clean -fdx 
+                   // cd ${REPO_BUILD_DIR}
+                  //  chmod 400 ./devops/config/keys/*.pem
+                  //  git clean -fdx 
                 '''
             }
         }
@@ -127,8 +127,8 @@ pipeline{
                 sh '''
                     echo off
                     echo "### Build Version Update...."
-                    cd ${REPO_BUILD_DIR}
-                    python3 versionUpdate.py settings.gradle --versionfile version --prefix "gradle.ext.version" --jenkinsBuildNo ${BUILD_NUMBER}
+                   // cd ${REPO_BUILD_DIR}
+                    python3 configDeploy.py settings.gradle --versionfile version --prefix "gradle.ext.version" --jenkinsBuildNo ${BUILD_NUMBER}
                 '''
                 //checkin scm
             }
