@@ -1,6 +1,6 @@
 pipeline{
     // agent any
-    agent { label 'test1' }
+   // agent { label 'cumulus' }
 
 
     environment{
