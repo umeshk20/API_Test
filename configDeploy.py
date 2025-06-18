@@ -1,11 +1,4 @@
 '''
-Copyright (C) 2019 Medtronic Diabetes.
-All Rights Reserved.
-This software is the confidential and proprietary information of
-Medtronic Diabetes.  Confidential Information.  You shall not
-disclose such Confidential Information and shall use it only in
-accordance with the terms of the license agreement you entered into
-with Medtronic Diabetes.
 '''
 import boto3
 import traceback
